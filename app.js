@@ -1439,6 +1439,8 @@ async function openLiveCapture(slot) {
   } catch (err) {
       console.error("Erreur caméra:", err);
       alert("Impossible d'ouvrir la caméra. Avez-vous bien donné l'autorisation ? Assurez-vous d'utiliser l'application via HTTPS ou localhost.");
+      if (stream) { stream.getTracks().forEach(t=>t.stop()); }
+      if (overlay && overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
   }
 }
 

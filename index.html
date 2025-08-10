@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Défi Photo - Mariage</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="brand">
+          <h1>Défi Photo – Mariage</h1>
+          <p class="subtitle">Chaque invité tourne la roue pour obtenir 2 défis photo différents.</p>
+        </div>
+        <div class="header-actions">
+          <button id="go-gallery-btn" class="btn">Galerie</button>
+          <button id="go-admin-btn" class="btn">Espace Admin</button>
+        </div>
+      </header>
+
+      <section class="card intro" id="invite-section">
+        <div class="intro__content">
+          <h2>Bienvenue au défi photo ✨</h2>
+          <p class="subtitle">Entre ton prénom pour faire tourner la roue et obtenir tes 2 défis uniques.</p>
+          <div id="access-banner" class="alert hidden">Accès réservé aux invités. Entrez votre nom tel que listé, et le mot de passe si requis.</div>
+          <div class="intro__form">
+            <label for="invite-name" class="sr-only">Nom de l'invité</label>
+            <input id="invite-name" class="input input-lg" type="text" placeholder="Ton prénom (ex: Léa)" list="invite-names" />
+            <button id="start-btn" class="btn primary btn-lg">Commencer</button>
+          </div>
+          <datalist id="invite-names"></datalist>
+          <div class="intro__form intro__form--pass hidden" id="event-pass-row">
+            <input id="event-pass" class="input input-lg" type="text" placeholder="Mot de passe évènement" />
+            <button id="event-pass-help" class="btn" type="button" title="Aide mot de passe">?</button>
+            <button id="event-pass-toggle" class="btn" type="button" aria-pressed="true" title="Masquer/Afficher">👁</button>
+          </div>
+          <div class="intro__form intro__form--pass hidden" id="invite-pass-row">
+            <input id="invite-pass" class="input input-lg" type="text" placeholder="Mot de passe (JJ/MM/AAAA)" />
+            <button id="invite-pass-help" class="btn" type="button" title="Aide mot de passe">?</button>
+            <button id="invite-pass-toggle" class="btn" type="button" aria-pressed="true" title="Masquer/Afficher">👁</button>
+          </div>
+          <div class="helper">Astuce: le même téléphone peut servir à plusieurs invités.</div>
+        </div>
+      </section>
+
+      <section class="card hidden" id="wheel-section">
+        <div class="invite-header">
+          <div>
+            <div class="invite-name" id="current-invite">Invité</div>
+            <div class="invite-progress"><span id="assigned-count">0</span>/2 défis assignés</div>
+          </div>
+          <div class="actions">
+            <button id="next-invite-btn" class="btn">Invité suivant</button>
+          </div>
+        </div>
+
+        <div class="progress">
+          <div id="progress-bar" class="progress__bar" style="width:0%"></div>
+        </div>
+
+        <div class="wheel-wrapper">
+          <div class="wheel" id="wheel">
+            <div class="wheel__center"></div>
+          </div>
+          <div class="pointer" aria-hidden="true"></div>
+        </div>
+        <div class="wheel-controls">
+          <button id="spin-btn" class="btn primary large">Lancer la roue</button>
+          <div id="locked-note" class="locked-note hidden">Défis complets pour cet invité 🎉</div>
+        </div>
+
+        <div class="result hidden" id="result">
+          <div class="result__title">Défi sélectionné</div>
+          <div class="result__challenge" id="result-challenge">—</div>
+        </div>
+
+        <div class="assigned" id="assigned-list">
+          <div class="assigned__title">Défis de l'invité</div>
+          <ol id="assigned-items" class="assigned__items"></ol>
+        </div>
+
+        <section class="card card--light hidden upload" id="upload-section">
+          <h3>Téléverse tes 2 photos</h3>
+          <p class="helper">Les photos sont compressées et restent sur cet appareil.</p>
+          <div class="upload__grid">
+            <div class="drop" data-slot="0">
+              <div class="drop__label" id="slot0-label">Défi 1</div>
+              <div class="drop__zone" id="slot0-zone">
+                <input type="file" id="slot0-input" accept="image/*" capture="environment" class="drop__input" />
+                <input type="file" id="slot0-input-gallery" accept="image/*" class="drop__input hidden" />
+                <div class="drop__hint">Glisse une image ou clique</div>
+                <img id="slot0-preview" class="drop__preview hidden" alt="Prévisualisation photo 1" />
+              </div>
+              <div class="drop__actions">
+                <button id="slot0-btn-camera" class="btn">Caméra</button>
+                <button id="slot0-btn-gallery" class="btn">Bibliothèque</button>
+                <button id="slot0-clear" class="btn">Effacer</button>
+              </div>
+            </div>
+            <div class="drop" data-slot="1">
+              <div class="drop__label" id="slot1-label">Défi 2</div>
+              <div class="drop__zone" id="slot1-zone">
+                <input type="file" id="slot1-input" accept="image/*" capture="environment" class="drop__input" />
+                <input type="file" id="slot1-input-gallery" accept="image/*" class="drop__input hidden" />
+                <div class="drop__hint">Glisse une image ou clique</div>
+                <img id="slot1-preview" class="drop__preview hidden" alt="Prévisualisation photo 2" />
+              </div>
+              <div class="drop__actions">
+                <button id="slot1-btn-camera" class="btn">Caméra</button>
+                <button id="slot1-btn-gallery" class="btn">Bibliothèque</button>
+                <button id="slot1-clear" class="btn">Effacer</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        
+      </section>
+
+      <section class="card hidden" id="admin-section">
+        <div class="admin-header">
+          <h2>Espace Admin</h2>
+          <div class="actions">
+            <button id="admin-refresh" class="btn">Rafraîchir</button>
+            <button id="admin-copy" class="btn">Copier</button>
+            <button id="admin-export" class="btn">Exporter CSV</button>
+            <button id="admin-export-zip" class="btn">Exporter ZIP</button>
+            <button id="admin-logout" class="btn danger">Déconnexion</button>
+            <button id="admin-exit" class="btn primary">Retour</button>
+          </div>
+        </div>
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Accès invités</h3>
+          <div class="row" style="align-items:center; gap:12px;">
+            <label class="helper">Qui peut accéder ?</label>
+            <select id="access-mode" class="input input-sm">
+              <option value="all">Tous (accès ouvert)</option>
+              <option value="guests_only">Réservé aux invités listés</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Accès évènement</h3>
+          <div class="row" style="align-items:center; gap:8px;">
+            <label class="helper">Mot de passe obligatoire ?</label>
+            <select id="event-required" class="input input-sm">
+              <option value="no">Non</option>
+              <option value="yes">Oui</option>
+            </select>
+            <input id="event-pass-admin" class="input" placeholder="Mot de passe évènement" />
+            <button id="event-pass-save" class="btn primary">Enregistrer</button>
+          </div>
+          <div class="helper">Conseil: utilisez un mot simple à communiquer aux invités (ex: un code lié au mariage).</div>
+        </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Gestion des défis</h3>
+          <p class="helper">Un défi par ligne. Les modifications n'affectent pas les défis déjà assignés.</p>
+          <textarea id="admin-challenges" class="input" style="width:100%; min-height: 140px; font-family: inherit;"></textarea>
+          <div class="actions" style="margin-top:8px;">
+            <button id="admin-challenges-save" class="btn primary">Enregistrer les défis</button>
+          </div>
+        </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Invités</h3>
+          <div class="row" style="margin-bottom:8px;">
+            <input id="admin-guest-name" class="input" placeholder="Nom de l'invité" />
+            <input id="admin-guest-pass" class="input" placeholder="Mot de passe (optionnel)" />
+            <button id="admin-guest-add" class="btn primary">Ajouter</button>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Invité</th>
+                <th>Mot de passe</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-guests-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="admin-tools">
+          <input id="admin-search" class="input" placeholder="Rechercher un invité…" />
+        </div>
+
+        <div class="card card--light" style="margin-top:12px;">
+          <h3>Photos (workflow)</h3>
+          <div class="tabs">
+            <button id="admin-tab-pending" class="tab active">En attente</button>
+            <button id="admin-tab-approved" class="tab">Validées</button>
+            <button id="admin-tab-published" class="tab">Publiées</button>
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <label class="helper">Trier par</label>
+            <select id="admin-photo-sort" class="input input-sm">
+              <option value="date_desc">Plus récent d'abord</option>
+              <option value="date_asc">Plus ancien d'abord</option>
+              <option value="likes_desc">Plus de likes (publiées)</option>
+            </select>
+          </div>
+          <div id="admin-photos-pending">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniature</th>
+                  <th>Invité</th>
+                  <th>Défi</th>
+                  <th>Envoyée</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-pending-tbody"></tbody>
+            </table>
+          </div>
+          <div id="admin-photos-approved" class="hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniature</th>
+                  <th>Invité</th>
+                  <th>Défi</th>
+                  <th>Validée</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-approved-tbody"></tbody>
+            </table>
+          </div>
+          <div id="admin-photos-published" class="hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniature</th>
+                  <th>Invité</th>
+                  <th>Défi</th>
+                  <th>Publiée</th>
+                  <th>Likes</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-published-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:8px;">
+          <button id="admin-reset-all" class="btn danger" title="Effacer toutes les données locales">Réinitialiser tout</button>
+        </div>
+
+        <div class="card card--light" style="margin-top:12px;">
+          <h3>Classement (temps de réalisation)</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Invité</th>
+                <th>Temps</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card hidden" id="gallery-section">
+        <div class="admin-header">
+          <h2>Galerie</h2>
+          <div class="actions">
+            <button id="gallery-exit" class="btn primary">Retour</button>
+          </div>
+        </div>
+        <div id="gallery-columns" class="gallery-columns" style="margin-bottom:12px;"></div>
+        <div class="card card--light">
+          <h3>Classement</h3>
+          <div id="likes-leader" class="helper" style="margin-bottom:8px;">Photo la plus likée: <span id="top-like-label">—</span> (<span id="top-like-count">0</span> ❤️)</div>
+          <div class="tabs">
+            <button id="tab-general" class="tab active">Général</button>
+            <button id="tab-by-challenge" class="tab">Par défi</button>
+            <button id="tab-by-likes" class="tab">Top likes</button>
+            <select id="challenge-filter" class="input input-sm" title="Choisir un défi"></select>
+          </div>
+
+          <div id="rank-general">
+            <div id="public-podium" class="podium" style="margin-bottom:8px;"></div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Invité</th>
+                  <th>Temps</th>
+                </tr>
+              </thead>
+              <tbody id="public-ranking-tbody"></tbody>
+            </table>
+          </div>
+
+          <div id="rank-by-challenge" class="hidden">
+            <div id="challenge-podium" class="podium" style="margin-bottom:8px;"></div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Invité</th>
+                  <th>Temps</th>
+                </tr>
+              </thead>
+              <tbody id="challenge-ranking-tbody"></tbody>
+            </table>
+          </div>
+
+          <div id="rank-by-likes" class="hidden">
+            <div id="likes-podium" class="podium" style="margin-bottom:8px;"></div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Invité</th>
+                  <th>Défi</th>
+                  <th>Likes</th>
+                </tr>
+              </thead>
+              <tbody id="likes-ranking-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div id="lightbox" class="lightbox hidden" aria-modal="true" role="dialog">
+        <div class="lightbox__backdrop" id="lightbox-backdrop"></div>
+        <div class="lightbox__content" role="document">
+          <img id="lightbox-img" class="lightbox__img" alt="Agrandissement" />
+          <div id="lightbox-caption" class="lightbox__caption"></div>
+          <div class="lightbox__actions">
+            <a id="lightbox-download" class="btn primary" download>Télécharger</a>
+            <button id="lightbox-close" class="btn">Fermer</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <small>Fonctionne hors-ligne. Les données restent uniquement sur cet appareil (localStorage).</small><br/>
+        <small>Fait avec amour ❤️ par Christina et Vincent à Paris</small>
+      </footer>
+    </main>
+
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <canvas id="confetti-canvas" class="confetti" width="0" height="0" aria-hidden="true"></canvas>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

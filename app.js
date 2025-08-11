@@ -54,10 +54,31 @@ const state = {
   // toastTimer: null, // Buggy, removed for a better implementation
 };
 
-let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabApproved, adminTabPublished, adminPhotosPendingTbody, adminPhotosApprovedTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl;
+let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabApproved, adminTabPublished, adminPhotosPendingTbody, adminPhotosApprovedTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl, loadingOverlayEl;
 let slotInputs = [], slotPreviews = [], slotZones = [], slotClears = [], slotLiveBtns = [], slotGalleryBtns = [];
 
 const $ = (sel) => document.querySelector(sel);
+
+function showLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.remove('hidden'); }
+function hideLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.add('hidden'); }
+
+function setupTheme() {
+  const themeToggle = document.getElementById('theme-toggle');
+  const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  
+  if (storedTheme) {
+    document.documentElement.setAttribute('data-theme', storedTheme);
+    if (themeToggle) themeToggle.checked = storedTheme === 'dark';
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener('change', (e) => {
+      const newTheme = e.target.checked ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
+  }
+}
 
 function loadAssignments() {
   try {
@@ -213,22 +234,24 @@ function setCurrentInvite(name) {
 
 function startForInvite(name) {
   if (!name || !name.trim()) {
-    alert("Veuillez saisir le nom de l'invité.");
+    showToast("Veuillez saisir le nom de l'invité.", "danger");
     return;
   }
   if (state.accessMode === 'guests_only') {
     const key = resolveInviteKey(name);
     const guest = state.guests[key];
-    if (!guest) { alert("Accès réservé aux invités. Nom introuvable."); return; }
+    if (!guest) { 
+      showToast("Accès réservé aux invités. Nom introuvable.", "danger");
+      return; 
+    }
     if (guest && guest.password) {
       const pin = (invitePassInput && invitePassInput.value) || '';
       if (pin !== guest.password) {
-        showToast("Mot de passe incorrect");
+        showToast("Mot de passe incorrect", "danger");
         if (invitePassInput) {
           invitePassInput.focus();
-          invitePassInput.setCustomValidity("Mot de passe incorrect");
-          invitePassInput.reportValidity();
-          setTimeout(()=> invitePassInput.setCustomValidity(''), 1500);
+          invitePassInput.classList.add('is-invalid');
+          setTimeout(()=> invitePassInput.classList.remove('is-invalid'), 1500);
         }
         return;
       }
@@ -237,12 +260,11 @@ function startForInvite(name) {
   if (state.eventAccess && state.eventAccess.required) {
     const pin = (eventPassInput && eventPassInput.value) || '';
     if (pin !== state.eventAccess.password) {
-      showToast('Mot de passe évènement incorrect');
+      showToast('Mot de passe évènement incorrect', "danger");
       if (eventPassInput) {
         eventPassInput.focus();
-        eventPassInput.setCustomValidity('Mot de passe évènement incorrect');
-        eventPassInput.reportValidity();
-        setTimeout(()=> eventPassInput.setCustomValidity(''), 1500);
+        eventPassInput.classList.add('is-invalid');
+        setTimeout(()=> eventPassInput.classList.remove('is-invalid'), 1500);
       }
       return;
     }
@@ -273,7 +295,10 @@ function onConfirmMissions() {
   const invite = state.currentInviteName; if (!invite) return;
   const num1 = parseInt(mission1El.value, 10);
   const num2 = parseInt(mission2El.value, 10);
-  if (Number.isNaN(num1) || Number.isNaN(num2) || num1 === num2) { alert('Choisissez deux missions distinctes.'); return; }
+  if (Number.isNaN(num1) || Number.isNaN(num2) || num1 === num2) { 
+    showToast('Choisissez deux missions distinctes.', 'danger'); 
+    return; 
+  }
   const m1 = state.missions[num1] || '';
   const m2 = state.missions[num2] || '';
   const sel = [
@@ -294,7 +319,7 @@ function onSubmitMissions() {
 
     const [upload1, upload2] = getUploadsForInvite(inviteKey);
     if (!upload1 || !upload1.data || !upload2 || !upload2.data) {
-        alert("Veuillez téléverser les deux photos avant d'envoyer.");
+        showToast("Veuillez téléverser les deux photos avant d'envoyer.", "danger");
         return;
     }
 
@@ -319,7 +344,6 @@ function hydrateMissionSelectors() {
   mission1El.innerHTML = options;
   mission2El.innerHTML = options;
 }
-
 
 
 
@@ -381,7 +405,10 @@ function openAdmin() {
     const ok = sessionStorage.getItem(ADMIN_PIN_KEY) === 'ok';
     if (!ok) {
       const pin = prompt('Entrez le code PIN Admin');
-      if (pin !== ADMIN_PIN_VALUE) { alert('Code incorrect'); return; }
+      if (pin !== ADMIN_PIN_VALUE) { 
+        showToast('Code incorrect', 'danger'); 
+        return; 
+      }
       sessionStorage.setItem(ADMIN_PIN_KEY, 'ok');
     }
   } catch {}
@@ -396,6 +423,7 @@ function openAdmin() {
   renderGuests();
   bindAdminPhotoTabs();
   renderAdminPhotos();
+  renderAdminStats();
 }
 
 function closeAdmin() {
@@ -502,7 +530,7 @@ async function exportZipGallery() {
       }
     });
   }
-  if (files.length === 0) { alert('Aucune photo publiée.'); return; }
+  if (files.length === 0) { showToast('Aucune photo publiée.', 'danger'); return; }
 
   const blobs = await Promise.all(files.map(f => dataUrlToUint8Array(f.dataUrl).then(bytes => ({ name: f.name, bytes }))));
   const zipBlob = buildZipBlob(blobs);
@@ -690,6 +718,7 @@ function init() {
   slotGalleryBtns = [document.getElementById('slot0-gallery-btn'), document.getElementById('slot1-gallery-btn')];
   submitMissionsBtn = document.getElementById('submit-missions-btn');
   submissionMsgEl = document.getElementById('submission-msg');
+  loadingOverlayEl = document.getElementById('loading-overlay');
 
   const startBtn = document.getElementById("start-btn");
   const inviteInput = document.getElementById("invite-name");
@@ -715,7 +744,7 @@ function init() {
   if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
   if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
     try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
-    alert('Déconnecté de l\'espace Admin.');
+    showToast('Déconnecté de l\'espace Admin.');
     closeAdmin();
   });
   if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
@@ -732,7 +761,7 @@ function init() {
     const lines = (adminChallengesTextarea.value || "").split(/\r?\n/)
       .map(s => s.trim()).filter(Boolean);
     if (lines.length < 3) {
-      alert("Veuillez renseigner au moins 3 missions.");
+      showToast("Veuillez renseigner au moins 3 missions.", "danger");
       return;
     }
     state.challenges = lines;
@@ -743,7 +772,10 @@ function init() {
   if (adminGuestAddBtn) adminGuestAddBtn.addEventListener('click', () => {
     const name = (adminGuestName.value||'').trim();
     const pass = (adminGuestPass.value||'').trim();
-    if (!name) { alert("Nom requis"); return; }
+    if (!name) { 
+      showToast("Nom requis", "danger");
+      return; 
+    }
     const key = resolveInviteKey(name);
     state.guests[key] = { display: name, password: pass || null };
     saveGuests();
@@ -777,7 +809,10 @@ function init() {
     eventPassSaveBtn.addEventListener('click', () => {
       const required = (eventRequiredSelect.value === 'yes');
       const pwd = (eventPassAdminInput.value || '').trim();
-      if (required && !pwd) { alert('Veuillez saisir un mot de passe évènement.'); return; }
+      if (required && !pwd) { 
+        showToast('Veuillez saisir un mot de passe évènement.', 'danger'); 
+        return; 
+      }
       state.eventAccess.required = required;
       state.eventAccess.password = pwd;
       saveEventPass();
@@ -844,7 +879,7 @@ function init() {
   }
 
   const passHelpBtn = document.getElementById('invite-pass-help');
-  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> alert('Indice mot de passe: ta date de naissance au format JJ/MM/AAAA (ex: 01/01/1990).'));
+  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast('Indice mot de passe: ta date de naissance au format JJ/MM/AAAA (ex: 01/01/1990).'));
   const passToggleBtn = document.getElementById('invite-pass-toggle');
   if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
     const isText = invitePassInput.type === 'text';
@@ -854,7 +889,7 @@ function init() {
 
   if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
   const eventHelpBtn = document.getElementById('event-pass-help');
-  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> alert("Demandez le mot de passe de l'évènement aux organisateurs."));
+  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast("Demandez le mot de passe de l'évènement aux organisateurs."));
   const eventToggleBtn = document.getElementById('event-pass-toggle');
   if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
     const isText = eventPassInput.type === 'text';
@@ -916,6 +951,7 @@ function init() {
 
   if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
   if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
+  setupTheme();
 }
 
 function renderGuests() {
@@ -960,9 +996,9 @@ function bindAdminPhotoTabs() {
     adminTabPending.classList.toggle('active', which==='pending');
     adminTabApproved.classList.toggle('active', which==='approved');
     adminTabPublished.classList.toggle('active', which==='published');
-    views.pending.classList.toggle('hidden', which!=='pending');
-    views.approved.classList.toggle('hidden', which!=='approved');
-    views.published.classList.toggle('hidden', which!=='published');
+    if (views.pending) views.pending.classList.toggle('hidden', which!=='pending');
+    if (views.approved) views.approved.classList.toggle('hidden', which!=='approved');
+    if (views.published) views.published.classList.toggle('hidden', which!=='published');
   }
   adminTabPending.addEventListener('click', ()=> activate('pending'));
   adminTabApproved.addEventListener('click', ()=> activate('approved'));
@@ -985,6 +1021,7 @@ function renderAdminPhotos() {
       records.push({ inviteKey, slot, up, display, likes: c });
     });
   }
+  console.log(`[renderAdminPhotos] Records to render:`, records);
   records.sort((a,b) => {
     if (sortMode === 'date_asc') return (a.up.createdAt||0) - (b.up.createdAt||0);
     if (sortMode === 'likes_desc') return (b.likes||0) - (a.likes||0);
@@ -1038,13 +1075,23 @@ const UPLOADS_KEY = "defis_mariage_uploads_v2";
 function loadUploads() {
   try {
     const raw = localStorage.getItem(UPLOADS_KEY);
-    if (!raw) return {};
+    if (!raw) {
+      console.log(`[loadUploads] No uploads found in localStorage. Returning empty object.`);
+      return {};
+    }
     const parsed = JSON.parse(raw);
+    console.log(`[loadUploads] Loaded uploads from localStorage:`, parsed);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch { return {}; }
+  } catch (e) {
+    console.error(`[loadUploads] Error loading uploads from localStorage:`, e);
+    return {};
+  }
 }
 let uploads = loadUploads();
-function saveUploads() { localStorage.setItem(UPLOADS_KEY, JSON.stringify(uploads)); }
+function saveUploads() {
+  localStorage.setItem(UPLOADS_KEY, JSON.stringify(uploads));
+  console.log(`[saveUploads] Uploads saved to localStorage:`, uploads);
+}
 
 function getUploadsForInvite(inviteKey) {
   const entry = uploads[inviteKey];
@@ -1052,11 +1099,13 @@ function getUploadsForInvite(inviteKey) {
   return [entry[0] || null, entry[1] || null];
 }
 function setUploadForInvite(inviteKey, slot, dataUrl) {
+  console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
   const current = uploads[inviteKey] || [null, null];
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? 'Mission 1' : 'Mission 2');
   current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
   uploads[inviteKey] = current;
   saveUploads();
+  console.log(`[setUploadForInvite] Current uploads object after setting:`, uploads);
 }
 function clearAllUploads() { uploads = {}; saveUploads(); }
 
@@ -1091,15 +1140,22 @@ function clearSlot(i) {
 }
 
 async function handleImageSelected(slot, file) {
+  showLoading();
   try {
     const dataUrl = await compressImageToDataUrl(file, 1600, 0.8);
     const key = state.currentInviteName;
-    if (!key) return;
+    if (!key) {
+      console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
+      return;
+    }
     setUploadForInvite(key, slot, dataUrl);
     loadUploadsForInvite(key);
     showToast(`Photo ${slot+1} enregistrée`);
   } catch (e) {
-    alert("Impossible de traiter l'image.");
+    console.error(`[handleImageSelected] Error processing image:`, e);
+    showToast("Impossible de traiter l'image.", "danger");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1110,7 +1166,7 @@ function handleAdminActionOnUpload(action, inviteKey, slot) {
   if (action === 'approve') item.approved = true;
   if (action === 'reject') { item.approved = false; item.published = false; }
   if (action === 'publish') {
-    if (!item.approved) { alert('Veuillez valider la photo avant de la publier.'); return; }
+    if (!item.approved) { showToast('Veuillez valider la photo avant de la publier.', 'danger'); return; }
     item.published = true;
   }
   if (action === 'approve') item.approvedAt = Date.now();
@@ -1398,55 +1454,108 @@ function compressImageToDataUrl(file, maxSize, quality) {
 
 async function openLiveCapture(slot) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("L'API de la caméra n'est pas disponible sur ce navigateur ou dans ce contexte. Veuillez utiliser un navigateur moderne et servir l'application via HTTPS ou localhost.");
+    showToast("L'API de la caméra n'est pas disponible sur ce navigateur.", "danger");
     return;
   }
 
+  let stream = null;
+  const overlay = document.createElement('div');
+  
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed'; overlay.style.inset = '0'; overlay.style.zIndex = '70'; overlay.style.background = 'rgba(0,0,0,0.8)';
-    overlay.innerHTML = `\n      <div style="position:absolute;inset:0;display:grid;place-items:center;">\n        <div style="background:#000;padding:8px;border-radius:12px;display:grid;gap:8px;max-width:92vw;">\n          <video id="live-video" autoplay playsinline style="width:min(92vw,640px);height:auto;border-radius:8px;"></video>\n          <div style="display:flex;gap:8px;justify-content:flex-end;">\n            <button id="live-cancel" class="btn">Annuler</button>\n            <button id="live-shoot" class="btn primary">Prendre la photo</button>\n          </div>\n        </div>\n      </div>`;
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    
+    overlay.style.position = 'fixed'; 
+    overlay.style.inset = '0'; 
+    overlay.style.zIndex = '70'; 
+    overlay.style.background = 'rgba(0,0,0,0.8)';
+    overlay.innerHTML = `
+      <div style="position:absolute;inset:0;display:grid;place-items:center;">
+        <div style="background:#000;padding:8px;border-radius:12px;display:grid;gap:8px;max-width:92vw;">
+          <video id="live-video" autoplay playsinline style="width:min(92vw,640px);height:auto;border-radius:8px;"></video>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button id="live-cancel" class="btn">Annuler</button>
+            <button id="live-shoot" class="btn primary">Prendre la photo</button>
+          </div>
+        </div>
+      </div>`;
     document.body.appendChild(overlay);
-    const video = overlay.querySelector('#live-video'); video.srcObject = stream;
-    const cleanup = () => { stream.getTracks().forEach(t=>t.stop()); overlay.remove(); };
+
+    const video = overlay.querySelector('#live-video');
+    video.srcObject = stream;
+
+    const cleanup = () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      if (overlay.parentNode) {
+        overlay.remove();
+      }
+    };
+
     overlay.querySelector('#live-cancel').addEventListener('click', cleanup);
     overlay.querySelector('#live-shoot').addEventListener('click', async () => {
-      const track = stream.getVideoTracks()[0];
-      const imageCapture = 'ImageCapture' in window ? new ImageCapture(track) : null;
+      showLoading();
       try {
+        const track = stream.getVideoTracks()[0];
+        const imageCapture = 'ImageCapture' in window ? new ImageCapture(track) : null;
         let blob;
+
         if (imageCapture && imageCapture.takePhoto) {
           blob = await imageCapture.takePhoto();
         } else {
           const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0);
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
           blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
         }
+        
         const file = new File([blob], 'live.jpg', { type: 'image/jpeg' });
-        const dataUrl = await compressImageToDataUrl(file, 1600, 0.8);
-        const key = state.currentInviteName; if (!key) { cleanup(); return; }
-        setUploadForInvite(key, slot, dataUrl);
-        loadUploadsForInvite(key);
-        showToast(`Photo ${slot+1} capturée`);
+        await handleImageSelected(slot, file);
+
       } catch (e) {
-        alert("Capture impossible");
+        showToast("Capture impossible", "danger");
       } finally {
         cleanup();
+        hideLoading();
       }
     });
   } catch (err) {
       console.error("Erreur caméra:", err);
-      alert("Impossible d'ouvrir la caméra. Avez-vous bien donné l'autorisation ? Assurez-vous d'utiliser l'application via HTTPS ou localhost.");
+      showToast("Impossible d'ouvrir la caméra. Avez-vous donné l'autorisation?", "danger");
       if (stream) { stream.getTracks().forEach(t=>t.stop()); }
-      if (overlay && overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
+      if (overlay.parentNode) { overlay.remove(); }
   }
 }
 
-  renderGallery();
-  renderMissionsTable();
-  hydrateMissionSelectors();
+function renderAdminStats() {
+  const statsParticipantsEl = document.getElementById('stats-participants');
+  const statsPendingEl = document.getElementById('stats-pending');
+  const statsPublishedEl = document.getElementById('stats-published');
+
+  if (!statsParticipantsEl || !statsPendingEl || !statsPublishedEl) return;
+
+  const participants = new Set(Object.keys(uploads));
+  let pendingCount = 0;
+  let publishedCount = 0;
+
+  for (const arr of Object.values(uploads)) {
+    (arr || []).forEach(up => {
+      if (up && up.data) {
+        if (up.published) {
+          publishedCount++;
+        } else if (!up.approved) {
+          pendingCount++;
+        }
+      }
+    });
+  }
+
+  statsParticipantsEl.textContent = participants.size;
+  statsPendingEl.textContent = pendingCount;
+  statsPublishedEl.textContent = publishedCount;
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init, { once: true });

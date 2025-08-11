@@ -102,6 +102,10 @@
                                     <button id="slot0-gallery-btn" class="btn">Choisir une photo</button>
                                     <button id="slot0-clear" class="btn">Effacer</button>
                                 </div>
+                                <div class="frame-toggle-wrapper hidden" id="frame-toggle-wrapper-0" style="font-size: 14px; margin-top: 4px;">
+                                  <input type="checkbox" id="frame-toggle-input-0" checked>
+                                  <label for="frame-toggle-input-0">Appliquer le cadre</label>
+                                </div>
                             </div>
                             <div class="drop" data-slot="1">
                                 <div class="drop__label" id="slot1-label">Mission 2</div>
@@ -116,12 +120,20 @@
                                     <button id="slot1-gallery-btn" class="btn">Choisir une photo</button>
                                     <button id="slot1-clear" class="btn">Effacer</button>
                                 </div>
+                                <div class="frame-toggle-wrapper hidden" id="frame-toggle-wrapper-1" style="font-size: 14px; margin-top: 4px;">
+                                  <input type="checkbox" id="frame-toggle-input-1" checked>
+                                  <label for="frame-toggle-input-1">Appliquer le cadre</label>
+                                </div>
                             </div>
                         </div>
                         <div class="row" style="margin-top:8px; justify-content:flex-end; gap:8px;">
                             <button id="submit-missions-btn" class="btn primary" disabled>Envoyer</button>
                         </div>
                         <div id="submission-msg" class="helper hidden">Missions envoyées 🎉 Tu es au top !</div>
+                        <div id="frame-toggle-wrapper" class="hidden" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                          <input type="checkbox" id="frame-toggle-input" checked>
+                          <label for="frame-toggle-input">Appliquer le cadre photo</label>
+                        </div>
                     </section>
                 </div>
             </div>
@@ -167,6 +179,52 @@
           <div class="stat-card">
             <h4>Photos publiées</h4>
             <div id="stats-published" class="stat-value">0</div>
+          </div>
+        </div>
+
+        <div class="card card--light" style="margin-top:12px;">
+          <h3>Photos (workflow)</h3>
+          <div class="tabs">
+            <button id="admin-tab-pending" class="tab active">En attente</button>
+            <button id="admin-tab-published" class="tab">Publiées</button>
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <label class="helper">Trier par</label>
+            <select id="admin-photo-sort" class="input input-sm">
+              <option value="date_desc">Plus récent d'abord</option>
+              <option value="date_asc">Plus ancien d'abord</option>
+              <option value="likes_desc">Plus de likes (publiées)</option>
+            </select>
+            <button id="admin-delete-all-photos" class="btn danger" style="margin-left:auto;">Supprimer toutes les photos</button>
+          </div>
+          <div id="admin-photos-pending">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniature</th>
+                  <th>Invité</th>
+                  <th>Mission</th>
+                  <th>Envoyée</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-pending-tbody"></tbody>
+            </table>
+          </div>
+          <div id="admin-photos-published" class="hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniature</th>
+                  <th>Invité</th>
+                  <th>Mission</th>
+                  <th>Publiée</th>
+                  <th>Likes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-published-tbody"></tbody>
+            </table>
           </div>
         </div>
 
@@ -231,68 +289,23 @@
             <tbody id="admin-guests-tbody"></tbody>
           </table>
         </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Cadre Photo</h3>
+          <div class="row" style="align-items:center; gap:12px;">
+            <input type="file" id="frame-upload-input" accept="image/png" class="input">
+            <button id="frame-save-btn" class="btn primary">Enregistrer</button>
+            <button id="frame-delete-btn" class="btn danger">Supprimer</button>
+          </div>
+          <div class="helper">Téléversez un cadre au format PNG avec une zone transparente. Il sera appliqué à toutes les photos.</div>
+          <div style="margin-top:12px;">
+            <h4>Aperçu du cadre actuel :</h4>
+            <img id="frame-preview-img" src="" alt="Aperçu du cadre" style="max-width:200px; border:1px solid var(--border-color); background: repeating-conic-gradient(#eee 0 25%, transparent 0 50%) 0 0 / 20px 20px;"/>
+          </div>
+        </div>
+
         <div class="admin-tools">
           <input id="admin-search" class="input" placeholder="Rechercher un invité…" />
-        </div>
-        <div class="card card--light" style="margin-top:12px;">
-          <h3>Photos (workflow)</h3>
-          <div class="tabs">
-            <button id="admin-tab-pending" class="tab active">En attente</button>
-            <button id="admin-tab-approved" class="tab">Validées</button>
-            <button id="admin-tab-published" class="tab">Publiées</button>
-          </div>
-          <div class="row" style="margin-bottom:8px;">
-            <label class="helper">Trier par</label>
-            <select id="admin-photo-sort" class="input input-sm">
-              <option value="date_desc">Plus récent d'abord</option>
-              <option value="date_asc">Plus ancien d'abord</option>
-              <option value="likes_desc">Plus de likes (publiées)</option>
-            </select>
-            <button id="admin-delete-all-photos" class="btn danger" style="margin-left:auto;">Supprimer toutes les photos</button>
-          </div>
-          <div id="admin-photos-pending">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Miniature</th>
-                  <th>Invité</th>
-                  <th>Mission</th>
-                  <th>Envoyée</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-photos-pending-tbody"></tbody>
-            </table>
-          </div>
-          <div id="admin-photos-approved" class="hidden">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Miniature</th>
-                  <th>Invité</th>
-                  <th>Mission</th>
-                  <th>Validée</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-photos-approved-tbody"></tbody>
-            </table>
-          </div>
-          <div id="admin-photos-published" class="hidden">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Miniature</th>
-                  <th>Invité</th>
-                  <th>Mission</th>
-                  <th>Publiée</th>
-                  <th>Likes</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-photos-published-tbody"></tbody>
-            </table>
-          </div>
         </div>
         <div class="actions" style="margin-top:8px;">
           <button id="admin-reset-all" class="btn danger" title="Effacer toutes les données locales">Réinitialiser tout</button>
@@ -318,6 +331,10 @@
           <div class="actions">
             <button id="gallery-exit" class="btn primary">Retour</button>
           </div>
+        </div>
+        <div id="gallery-placeholder" class="card card--light hidden" style="text-align: center; padding: 32px; margin-bottom: 12px;">
+          <h3>L'album est encore vide !</h3>
+          <p class="subtitle">Chères invitées, à vos appareils photo ! La galerie attend vos chefs-d'œuvre. 📸</p>
         </div>
         <div id="gallery-columns" class="gallery-columns" style="margin-bottom:12px;"></div>
         

@@ -39,6 +39,7 @@ const GUESTS_KEY = "defis_mariage_guests_v1"; // { key: { display, password? } }
 const ACCESS_MODE_KEY = "defis_mariage_access_mode_v1"; // 'all' | 'guests_only'
 const EVENT_PASS_KEY = "defis_mariage_event_pass_v1"; // { required: boolean, password: string }
 const MISSIONS_KEY = "defis_mariage_missions_v1"; // {1:{c1,c2},...,10:{c1,c2}}
+const FRAME_KEY = "defis_mariage_frame_v1";
 
 const state = {
   currentInviteName: null,
@@ -51,34 +52,17 @@ const state = {
   accessMode: loadAccessMode(),
   eventAccess: loadEventPass(),
   missions: loadMissions(),
+  frame: localStorage.getItem(FRAME_KEY) || null,
   // toastTimer: null, // Buggy, removed for a better implementation
 };
 
-let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabApproved, adminTabPublished, adminPhotosPendingTbody, adminPhotosApprovedTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl, loadingOverlayEl;
+let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabPublished, adminPhotosPendingTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl, loadingOverlayEl;
 let slotInputs = [], slotPreviews = [], slotZones = [], slotClears = [], slotLiveBtns = [], slotGalleryBtns = [];
 
 const $ = (sel) => document.querySelector(sel);
 
 function showLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.remove('hidden'); }
 function hideLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.add('hidden'); }
-
-function setupTheme() {
-  const themeToggle = document.getElementById('theme-toggle');
-  const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  
-  if (storedTheme) {
-    document.documentElement.setAttribute('data-theme', storedTheme);
-    if (themeToggle) themeToggle.checked = storedTheme === 'dark';
-  }
-
-  if (themeToggle) {
-    themeToggle.addEventListener('change', (e) => {
-      const newTheme = e.target.checked ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-    });
-  }
-}
 
 function loadAssignments() {
   try {
@@ -313,7 +297,7 @@ function onConfirmMissions() {
   launchConfetti();
 }
 
-function onSubmitMissions() {
+async function onSubmitMissions() {
     const inviteKey = state.currentInviteName;
     if (!inviteKey) return;
 
@@ -321,6 +305,16 @@ function onSubmitMissions() {
     if (!upload1 || !upload1.data || !upload2 || !upload2.data) {
         showToast("Veuillez téléverser les deux photos avant d'envoyer.", "danger");
         return;
+    }
+
+    showLoading();
+    try {
+        for (let i = 0; i < 2; i++) {
+            const previewSrc = slotPreviews[i].src;
+            setUploadForInvite(inviteKey, i, previewSrc);
+        }
+    } finally {
+        hideLoading();
     }
 
     showToast("Merci pour ta participation !");
@@ -699,10 +693,8 @@ function init() {
   adminGuestsTbody = $("#admin-guests-tbody");
   accessModeSelect = $("#access-mode");
   adminTabPending = $("#admin-tab-pending");
-  adminTabApproved = $("#admin-tab-approved");
   adminTabPublished = $("#admin-tab-published");
   adminPhotosPendingTbody = $("#admin-photos-pending-tbody");
-  adminPhotosApprovedTbody = $("#admin-photos-approved-tbody");
   adminPhotosPublishedTbody = $("#admin-photos-published-tbody");
   eventRequiredSelect = document.getElementById('event-required');
   eventPassAdminInput = document.getElementById('event-pass-admin');
@@ -756,6 +748,42 @@ function init() {
       showToast("Données réinitialisées");
     }
   });
+
+  let frameUploadInput, frameSaveBtn, frameDeleteBtn, framePreviewImg;
+  
+  frameUploadInput = document.getElementById('frame-upload-input');
+  frameSaveBtn = document.getElementById('frame-save-btn');
+  frameDeleteBtn = document.getElementById('frame-delete-btn');
+  framePreviewImg = document.getElementById('frame-preview-img');
+
+  if (frameUploadInput && frameSaveBtn && frameDeleteBtn && framePreviewImg) {
+    frameSaveBtn.addEventListener('click', () => {
+      const file = frameUploadInput.files[0];
+      if (!file) {
+        showToast("Veuillez sélectionner un fichier.", "danger");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.frame = e.target.result;
+        localStorage.setItem(FRAME_KEY, state.frame);
+        framePreviewImg.src = state.frame;
+        showToast("Cadre enregistré !");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    frameDeleteBtn.addEventListener('click', () => {
+      state.frame = null;
+      localStorage.removeItem(FRAME_KEY);
+      framePreviewImg.src = '';
+      showToast("Cadre supprimé.");
+    });
+
+    if (state.frame) {
+      framePreviewImg.src = state.frame;
+    }
+  }
 
   if (adminChallengesSaveBtn) adminChallengesSaveBtn.addEventListener("click", () => {
     const lines = (adminChallengesTextarea.value || "").split(/\r?\n/)
@@ -920,6 +948,10 @@ function init() {
       const file = e.target.files && e.target.files[0];
       if (file) handleImageSelected(i, file);
     });
+    const frameToggle = document.getElementById(`frame-toggle-input-${i}`);
+    if (frameToggle) {
+      frameToggle.addEventListener('change', () => updatePreview(i));
+    }
   });
 
   slotLiveBtns.forEach((btn, i) => {
@@ -954,6 +986,24 @@ function init() {
   setupTheme();
 }
 
+function setupTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    if (storedTheme) {
+        document.documentElement.setAttribute('data-theme', storedTheme);
+        if (themeToggle) themeToggle.checked = storedTheme === 'dark';
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+}
+
 function renderGuests() {
   if (!adminGuestsTbody) return;
   adminGuestsTbody.innerHTML = '';
@@ -961,7 +1011,13 @@ function renderGuests() {
   entries.forEach(([key, g]) => {
     const status = computeDurationMs(key) != null ? '✅ 2/2 validés' : '⏳ en cours';
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(g.display||key)}</td>\n      <td>${g.password ? '••••' : '—'}</td>\n      <td>${status}</td>\n      <td>\n        <button class="btn" data-g="${key}" data-act="edit">Éditer</button>\n        <button class="btn danger" data-g="${key}" data-act="del">Supprimer</button>\n      </td>`;
+    tr.innerHTML = `<td>${escapeHtml(g.display||key)}</td>
+      <td>${g.password ? '••••' : '—'}</td>
+      <td>${status}</td>
+      <td>
+        <button class="btn" data-g="${key}" data-act="edit">Éditer</button>
+        <button class="btn danger" data-g="${key}" data-act="del">Supprimer</button>
+      </td>`;
     adminGuestsTbody.appendChild(tr);
   });
   adminGuestsTbody.querySelectorAll('button[data-act="del"]').forEach(btn => {
@@ -986,29 +1042,24 @@ function renderGuests() {
 }
 
 function bindAdminPhotoTabs() {
-  if (!adminTabPending || !adminTabApproved || !adminTabPublished) return;
+  if (!adminTabPending || !adminTabPublished) return;
   const views = {
     pending: document.getElementById('admin-photos-pending'),
-    approved: document.getElementById('admin-photos-approved'),
     published: document.getElementById('admin-photos-published')
   };
   function activate(which) {
     adminTabPending.classList.toggle('active', which==='pending');
-    adminTabApproved.classList.toggle('active', which==='approved');
     adminTabPublished.classList.toggle('active', which==='published');
     if (views.pending) views.pending.classList.toggle('hidden', which!=='pending');
-    if (views.approved) views.approved.classList.toggle('hidden', which!=='approved');
     if (views.published) views.published.classList.toggle('hidden', which!=='published');
   }
   adminTabPending.addEventListener('click', ()=> activate('pending'));
-  adminTabApproved.addEventListener('click', ()=> activate('approved'));
   adminTabPublished.addEventListener('click', ()=> activate('published'));
 }
 
 function renderAdminPhotos() {
-  if (!adminPhotosPendingTbody || !adminPhotosApprovedTbody || !adminPhotosPublishedTbody) return;
+  if (!adminPhotosPendingTbody || !adminPhotosPublishedTbody) return;
   adminPhotosPendingTbody.innerHTML = '';
-  adminPhotosApprovedTbody.innerHTML = '';
   adminPhotosPublishedTbody.innerHTML = '';
   const fmt = (ts) => ts ? new Date(ts).toLocaleString() : '—';
   const sortMode = (document.getElementById('admin-photo-sort')?.value) || 'date_desc';
@@ -1031,32 +1082,22 @@ function renderAdminPhotos() {
     const { inviteKey, slot, up, display, likes } = rec;
     const tr = document.createElement('tr');
     const img = `<img src="${up.data}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
-    if (!up.approved && !up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">En attente</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="approve" data-g="${inviteKey}" data-slot="${slot}">Valider</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
+    if (!up.published) {
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">En attente</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">Valider et Publier</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
       adminPhotosPendingTbody.appendChild(tr);
-    } else if (up.approved && !up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-approved">Validée</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.approvedAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">Publier</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
-      adminPhotosApprovedTbody.appendChild(tr);
     } else if (up.published) {
       tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">Publiée</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.publishedAt)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
       adminPhotosPublishedTbody.appendChild(tr);
     }
   }
-  adminPhotosPendingTbody.querySelectorAll('button[data-act="approve"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
-      handleAdminActionOnUpload('approve', g, s);
-      renderAdminPhotos();
-    });
-  });
-  adminPhotosApprovedTbody.querySelectorAll('button[data-act="publish"]').forEach(btn => {
+  adminPhotosPendingTbody.querySelectorAll('button[data-act="publish"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
       handleAdminActionOnUpload('publish', g, s);
       renderAdminPhotos();
     });
   });
-  [adminPhotosPendingTbody, adminPhotosApprovedTbody, adminPhotosPublishedTbody].forEach(tbody => {
+  [adminPhotosPendingTbody, adminPhotosPublishedTbody].forEach(tbody => {
     tbody.querySelectorAll('button[data-act="delete"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
@@ -1110,22 +1151,39 @@ function setUploadForInvite(inviteKey, slot, dataUrl) {
 function clearAllUploads() { uploads = {}; saveUploads(); }
 
 function loadUploadsForInvite(inviteKey) {
+  for (let i = 0; i < 2; i++) {
+    updatePreview(i);
+  }
   const [a,b] = getUploadsForInvite(inviteKey);
-  const arr = [a,b];
-  arr.forEach((dataUrl, i) => {
-    const img = slotPreviews[i];
-    const zone = slotZones[i];
-    const data = dataUrl && dataUrl.data;
-    if (data) {
-      img.src = data; img.classList.remove('hidden');
-      zone.querySelector('.drop__hint').classList.add('hidden');
-    } else {
-      img.src = ''; img.classList.add('hidden');
-      zone.querySelector('.drop__hint').classList.remove('hidden');
-    }
-  });
   if (submitMissionsBtn) {
       submitMissionsBtn.disabled = !(a && a.data && b && b.data);
+  }
+}
+
+async function updatePreview(slot) {
+  const [a, b] = getUploadsForInvite(state.currentInviteName);
+  const arr = [a, b];
+  const upload = arr[slot];
+  const dataUrl = upload && upload.data;
+  
+  const imgPreview = slotPreviews[slot];
+  const zone = slotZones[slot];
+  const frameToggleWrapper = document.getElementById(`frame-toggle-wrapper-${slot}`);
+  const frameToggle = document.getElementById(`frame-toggle-input-${slot}`);
+
+  if (frameToggleWrapper) {
+    frameToggleWrapper.classList.toggle('hidden', !state.frame || !dataUrl);
+  }
+
+  if (dataUrl) {
+    const shouldUseFrame = frameToggle && frameToggle.checked && state.frame;
+    imgPreview.src = shouldUseFrame ? await applyFrame(dataUrl) : dataUrl;
+    imgPreview.classList.remove('hidden');
+    zone.querySelector('.drop__hint').classList.add('hidden');
+  } else {
+    imgPreview.src = '';
+    imgPreview.classList.add('hidden');
+    zone.querySelector('.drop__hint').classList.remove('hidden');
   }
 }
 
@@ -1142,14 +1200,14 @@ function clearSlot(i) {
 async function handleImageSelected(slot, file) {
   showLoading();
   try {
-    const dataUrl = await compressImageToDataUrl(file, 1600, 0.8);
+    const dataUrl = await compressImageToDataUrl(file); // Just compress, don't frame yet
     const key = state.currentInviteName;
     if (!key) {
       console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
       return;
     }
     setUploadForInvite(key, slot, dataUrl);
-    loadUploadsForInvite(key);
+    await updatePreview(slot); // New function to handle preview with/without frame
     showToast(`Photo ${slot+1} enregistrée`);
   } catch (e) {
     console.error(`[handleImageSelected] Error processing image:`, e);
@@ -1163,14 +1221,12 @@ function handleAdminActionOnUpload(action, inviteKey, slot) {
   const entry = uploads[inviteKey] || [null, null];
   const item = entry[slot];
   if (!item) return;
-  if (action === 'approve') item.approved = true;
-  if (action === 'reject') { item.approved = false; item.published = false; }
   if (action === 'publish') {
-    if (!item.approved) { showToast('Veuillez valider la photo avant de la publier.', 'danger'); return; }
+    item.approved = true;
     item.published = true;
+    item.approvedAt = item.approvedAt || Date.now();
+    item.publishedAt = Date.now();
   }
-  if (action === 'approve') item.approvedAt = Date.now();
-  if (action === 'publish') item.publishedAt = Date.now();
   uploads[inviteKey] = entry;
   saveUploads();
   renderAdminTable();
@@ -1179,7 +1235,25 @@ function handleAdminActionOnUpload(action, inviteKey, slot) {
 
 function renderGallery() {
   const columnsWrap = document.getElementById('gallery-columns');
-  if (!columnsWrap) return;
+  let placeholder = document.getElementById('gallery-placeholder');
+
+  if (!columnsWrap) return; // Bail if the main container isn't there
+
+  // If placeholder is missing from HTML (e.g., old cached version), create it dynamically
+  if (!placeholder) {
+    placeholder = document.createElement('div');
+    placeholder.id = 'gallery-placeholder';
+    placeholder.className = 'card card--light hidden'; // Start hidden
+    placeholder.style.textAlign = 'center';
+    placeholder.style.padding = '32px';
+    placeholder.style.marginBottom = '12px';
+    placeholder.innerHTML = `
+      <h3>L'album est encore vide !</h3>
+      <p class="subtitle">Chères invitées, à vos appareils photo ! La galerie attend vos chefs-d'œuvre. 📸</p>
+    `;
+    columnsWrap.parentNode.insertBefore(placeholder, columnsWrap);
+  }
+
   columnsWrap.innerHTML = '';
   const byChallenge = new Map();
   for (const [inviteKey, arr] of Object.entries(uploads)) {
@@ -1192,6 +1266,16 @@ function renderGallery() {
       }
     });
   }
+  
+  if (byChallenge.size === 0) {
+    placeholder.classList.remove('hidden');
+    columnsWrap.classList.add('hidden');
+    return;
+  }
+  
+  placeholder.classList.add('hidden');
+  columnsWrap.classList.remove('hidden');
+
   const labels = Array.from(byChallenge.keys()).sort();
   labels.forEach((label, idx) => {
     const col = document.createElement('div');
@@ -1214,7 +1298,10 @@ function renderGallery() {
         const mins = Math.floor(ms/60000); const secs = Math.floor((ms%60000)/1000);
         timeInfo = `Bravo ! Défi réalisé en ${mins}m${secs.toString().padStart(2,'0')}s 🎯`;
       }
-      div.innerHTML = `<img src="${img}" alt="${escapeHtml(label)}"/>\n        <div class="badge">${escapeHtml(invite)}</div>\n        <button class="like" type="button" aria-label="J'aime"><span>❤️</span><span class="like-count">${likes}</span></button>\n        <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.55);color:white;font-size:12px;padding:4px 6px;border-radius:8px;">${escapeHtml(label)}${timeInfo? ' – '+timeInfo: ''}</div>`;
+      div.innerHTML = `<img src="${img}" alt="${escapeHtml(label)}"/>
+        <div class="badge">${escapeHtml(invite)}</div>
+        <button class="like" type="button" aria-label="J'aime"><span>❤️</span><span class="like-count">${likes}</span></button>
+        <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.55);color:white;font-size:12px;padding:4px 6px;border-radius:8px;">${escapeHtml(label)}${timeInfo? ' – '+timeInfo: ''}</div>`;
       div.addEventListener('click', (e) => {
         if (e.target.closest('.like')) return;
         showLightbox(img, `${invite} – ${label}`);
@@ -1425,31 +1512,63 @@ function renderRankingByLikes() {
   });
 }
 
-function compressImageToDataUrl(file, maxSize, quality) {
+function compressImageToDataUrl(file) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
     const reader = new FileReader();
-    reader.onload = () => { img.src = reader.result; };
-    reader.onerror = reject;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      let { width, height } = img;
-      const ratio = Math.min(1, maxSize / Math.max(width, height));
-      width = Math.round(width * ratio); height = Math.round(height * ratio);
-      canvas.width = width; canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        if (!blob) return reject(new Error('No blob'));
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(blob);
-      }, 'image/jpeg', quality);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const maxSize = 1600; // Max width/height
+
+        // 1. Resize the image while maintaining aspect ratio
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
     };
-    img.onerror = reject;
+    reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function applyFrame(originalImage) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const frameImg = new Image();
+            frameImg.onload = () => {
+                ctx.drawImage(frameImg, 0, 0, img.width, img.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+            };
+            frameImg.onerror = reject;
+            frameImg.src = state.frame;
+        };
+        img.onerror = reject;
+        img.src = originalImage;
+    });
 }
 
 async function openLiveCapture(slot) {

@@ -4,11 +4,7 @@ const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-const { createClient } = supabase;
-
-const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
+let supabaseClient;
 
 const i18n = {
   fr: {
@@ -849,6 +845,12 @@ async function init() {
     if (typeof supabase === 'undefined' || !supabase) {
       throw new Error("Le client Supabase n'est pas disponible. L'application ne peut pas démarrer.");
     }
+
+    const { createClient } = supabase;
+    const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    
     state.missions = await loadMissions(); // Load missions first
   
     const langFrBtn = document.getElementById('lang-fr');

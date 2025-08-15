@@ -225,6 +225,8 @@ const state = {
   frame: null,
 };
 
+let uploads = {};
+
 async function loadInitialData() {
   state.challenges = await loadChallenges();
   state.assignments = await loadAssignments();
@@ -903,6 +905,7 @@ function buildZipBlob(files) {
 
 async function init() {
   await loadInitialData();
+  uploads = await loadUploads();
 
   const langFrBtn = document.getElementById('lang-fr');
   const langEsBtn = document.getElementById('lang-es');
@@ -1367,7 +1370,7 @@ async function loadUploads() {
   }
   return uploads;
 }
-let uploads = loadUploads();
+
 async function saveUploads() {
   // This function will now be handled by more granular functions like setUploadForInvite
   // and handleAdminActionOnUpload, so we can leave it empty or remove it.

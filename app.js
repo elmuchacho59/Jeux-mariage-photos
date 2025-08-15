@@ -1736,7 +1736,15 @@ async function openLiveCapture(slot) {
   const overlay = document.createElement('div');
   
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false };
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      console.warn("Could not get environment camera, trying default camera", err);
+      // Fallback to any camera if the environment one fails
+      const fallbackConstraints = { video: true, audio: false };
+      stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+    }
     
     overlay.style.position = 'fixed'; 
     overlay.style.inset = '0'; 

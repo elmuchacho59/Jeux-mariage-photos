@@ -284,12 +284,9 @@ async function saveAssignments() {
       assignmentsToSave.push({ invite_key, challenge });
     }
   }
-  // This is a bit simplistic, it will re-insert everything.
-  // A better approach would be to only insert new assignments.
-  // For now, we might need to clear and re-insert. Or use upsert carefully.
-  // Let's clear first for simplicity.
-  await supabase_client.from('assignments').delete().neq('invite_key', 'dummy_value_to_delete_all'); // hack to delete all
-  const { error } = await supabase_client.from('assignments').insert(assignmentsToSave);
+  
+  const { error } = await supabase_client.from('assignments').upsert(assignmentsToSave, { onConflict: 'invite_key, challenge' });
+
   if (error) {
     console.error('Error saving assignments:', error);
   }

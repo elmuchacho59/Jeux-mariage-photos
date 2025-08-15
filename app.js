@@ -1,3 +1,15 @@
+const { createClient } = supabase;
+
+const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+const { createClient } = supabase;
+
+const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
 const i18n = {
   fr: {
     unassigned: "Non assigné",
@@ -216,7 +228,7 @@ const state = {
   guests: loadGuests(),
   accessMode: loadAccessMode(),
   eventAccess: loadEventPass(),
-  missions: loadMissions(),
+  missions: await loadMissions(),
   frame: localStorage.getItem(FRAME_KEY) || null,
 };
 
@@ -281,25 +293,31 @@ function loadEventPass() {
 }
 function saveEventPass() { localStorage.setItem(EVENT_PASS_KEY, JSON.stringify(state.eventAccess)); }
 
-function loadMissions() {
-  try {
-    const raw = localStorage.getItem(MISSIONS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === 'object' && parsed !== null) {
-        // New format: { 1: { fr: '...', es: '...' }, ... }
-        if (parsed['1'] && typeof parsed['1'] === 'object') {
-          return parsed;
-        }
-        // Old format: { 1: '...', ... } -> convert
-        const converted = {};
-        for (let i = 1; i <= 10; i++) {
-          converted[i] = { fr: parsed[i] || '', es: '' };
-        }
-        return converted;
-      }
+async function loadMissions() {
+  const { data, error } = await supabaseClient
+    .from('missions')
+    .select('mission_number, fr, es')
+    .order('mission_number');
+
+  if (error) {
+    console.error('Error loading missions:', error);
+    // Fallback to local storage or default if Supabase fails
+    try {
+      const raw = localStorage.getItem(MISSIONS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      // Ignore parsing error
     }
-  } catch {}
+  }
+
+  if (data) {
+    const missions = {};
+    for (const mission of data) {
+      missions[mission.mission_number] = { fr: mission.fr, es: mission.es };
+    }
+    return missions;
+  }
+
   const def = {};
   for (let i = 1; i <= 10; i++) {
     def[i] = { fr: '', es: '' };
@@ -307,14 +325,24 @@ function loadMissions() {
   return def;
 }
 
-function saveMissions() {
+async function saveMissions() {
+  const missionsToSave = [];
   for (let i = 1; i <= 10; i++) {
     const fr = document.getElementById(`mission-c-${i}-fr`)?.value || '';
     const es = document.getElementById(`mission-c-${i}-es`)?.value || '';
-    state.missions[i] = { fr, es };
+    missionsToSave.push({ mission_number: i, fr, es });
   }
-  localStorage.setItem(MISSIONS_KEY, JSON.stringify(state.missions));
-  showToast(t('missionsSavedSuccess'));
+
+  const { error } = await supabaseClient
+    .from('missions')
+    .upsert(missionsToSave, { onConflict: 'mission_number' });
+
+  if (error) {
+    console.error('Error saving missions:', error);
+    showToast('Erreur lors de la sauvegarde des missions', 'danger');
+  } else {
+    showToast(t('missionsSavedSuccess'));
+  }
 }
 
 
@@ -394,7 +422,7 @@ function setCurrentInvite(name) {
   renderAssigned(key);
 }
 
-function startForInvite(name) {
+async function startForInvite(name) {
   if (!name || !name.trim()) {
     showToast(t("enterGuestName"), "danger");
     return;
@@ -434,6 +462,7 @@ function startForInvite(name) {
   
   goToStep('step-missions');
   setCurrentInvite(name.trim());
+  await loadUploadsForInvite(resolveInviteKey(name.trim())); // Load uploads for the new guest
   showToast(`${t('welcome')} ${name.trim()} ! ${t('chooseMissions')}`);
 }
 
@@ -485,16 +514,7 @@ async function onSubmitMissions() {
         return;
     }
 
-    showLoading();
-    try {
-        for (let i = 0; i < 2; i++) {
-            const previewSrc = slotPreviews[i].src;
-            setUploadForInvite(inviteKey, i, previewSrc);
-        }
-    } finally {
-        hideLoading();
-    }
-
+    // Photos are already uploaded, just confirm
     showToast(t("submitConfirmation"));
     goToStep('step-confirmation');
 }
@@ -824,7 +844,7 @@ function updateLangButtons() {
     langEsBtn.classList.toggle('active', currentLang === 'es');
   }
 
-function init() {
+async function init() {
   const langFrBtn = document.getElementById('lang-fr');
   const langEsBtn = document.getElementById('lang-es');
 
@@ -1211,53 +1231,65 @@ function bindAdminPhotoTabs() {
   adminTabPublished.addEventListener('click', ()=> activate('published'));
 }
 
-function renderAdminPhotos() {
+async function renderAdminPhotos() {
   if (!adminPhotosPendingTbody || !adminPhotosPublishedTbody) return;
   adminPhotosPendingTbody.innerHTML = '';
   adminPhotosPublishedTbody.innerHTML = '';
   const fmt = (ts) => ts ? new Date(ts).toLocaleString() : '—';
   const sortMode = (document.getElementById('admin-photo-sort')?.value) || 'date_desc';
-  const records = [];
-  for (const [inviteKey, arr] of Object.entries(uploads)) {
-    const display = state.nameMap[inviteKey] || inviteKey;
-    (arr||[]).forEach((up, slot) => {
-      if (!up || !up.data) return;
-      const id = makeImageId(inviteKey, up.data); const c = (likesDb[id]&&likesDb[id].count)||0;
-      records.push({ inviteKey, slot, up, display, likes: c });
-    });
+
+  const { data, error } = await supabaseClient
+    .from('photos')
+    .select('*')
+    .order('created_at', { ascending: sortMode === 'date_asc' });
+
+  if (error) {
+    console.error('Error fetching photos:', error);
+    return;
   }
-  console.log(`[renderAdminPhotos] Records to render:`, records);
-  records.sort((a,b) => {
-    if (sortMode === 'date_asc') return (a.up.createdAt||0) - (b.up.createdAt||0);
-    if (sortMode === 'likes_desc') return (b.likes||0) - (a.likes||0);
-    return (b.up.createdAt||0) - (a.up.createdAt||0);
+
+  const records = data.map(photo => {
+    const display = state.nameMap[photo.guest_key] || photo.guest_key;
+    const id = makeImageId(photo.guest_key, photo.photo_url);
+    const likes = (likesDb[id] && likesDb[id].count) || 0;
+    return { ...photo, display, likes };
   });
+
+  console.log(`[renderAdminPhotos] Records to render:`, records);
+  if (sortMode === 'likes_desc') {
+    records.sort((a,b) => (b.likes||0) - (a.likes||0));
+  }
+
   for (const rec of records) {
-    const { inviteKey, slot, up, display, likes } = rec;
+    const { id, photo_url, display, mission_label, created_at, status, likes, guest_key } = rec;
     const tr = document.createElement('tr');
-    const img = `<img src="${up.data}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
-    if (!up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">${t('pendingStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">${t('validateAndPublish')}</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
+    const img = `<img src="${photo_url}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
+    if (status === 'pending') {
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">${t('pendingStatus')}</span></td><td>${escapeHtml(mission_label||'')}</td><td>${fmt(created_at)}</td><td><button class="btn" data-act="publish" data-id="${id}">${t('validateAndPublish')}</button> <button class="btn danger" data-act="delete" data-id="${id}" data-url="${photo_url}">${t('delete')}</button></td>`;
       adminPhotosPendingTbody.appendChild(tr);
-    } else if (up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">${t('publishedStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.publishedAt)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
+    } else if (status === 'published') {
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">${t('publishedStatus')}</span></td><td>${escapeHtml(mission_label||'')}</td><td>${fmt(created_at)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-id="${id}" data-url="${photo_url}">${t('delete')}</button></td>`;
       adminPhotosPublishedTbody.appendChild(tr);
     }
   }
   adminPhotosPendingTbody.querySelectorAll('button[data-act="publish"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
-      handleAdminActionOnUpload('publish', g, s);
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      await supabaseClient.from('photos').update({ status: 'published' }).eq('id', id);
       renderAdminPhotos();
     });
   });
   [adminPhotosPendingTbody, adminPhotosPublishedTbody].forEach(tbody => {
     tbody.querySelectorAll('button[data-act="delete"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const url = btn.getAttribute('data-url');
         if (!confirm(t('deletePhotoConfirmation'))) return;
-        const arr = uploads[g] || [null,null];
-        arr[s] = null; uploads[g] = arr; saveUploads();
+
+        const fileName = url.split('/').pop();
+        await supabaseClient.storage.from('photos').remove([fileName]);
+        await supabaseClient.from('photos').delete().eq('id', id);
+
         renderAdminPhotos();
         showToast(t('photoDeleted'));
       });
@@ -1293,18 +1325,37 @@ function getUploadsForInvite(inviteKey) {
   if (!entry) return [null, null];
   return [entry[0] || null, entry[1] || null];
 }
-function setUploadForInvite(inviteKey, slot, dataUrl) {
+function setUploadForInvite(inviteKey, slot, publicUrl) {
   console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
   const current = uploads[inviteKey] || [null, null];
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-  current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
+  current[slot] = { data: publicUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null, isUrl: true };
   uploads[inviteKey] = current;
-  saveUploads();
+  saveUploads(); // Still save to local storage for immediate UI updates
   console.log(`[setUploadForInvite] Current uploads object after setting:`, uploads);
 }
 function clearAllUploads() { uploads = {}; saveUploads(); }
 
-function loadUploadsForInvite(inviteKey) {
+async function loadUploadsForInvite(inviteKey) {
+  const { data, error } = await supabaseClient
+    .from('photos')
+    .select('photo_url, mission_label')
+    .eq('guest_key', inviteKey)
+    .order('created_at');
+
+  if (error) {
+    console.error('Error loading uploads:', error);
+  } else {
+    uploads[inviteKey] = [null, null];
+    if (data && data.length > 0) {
+      data.forEach((photo, index) => {
+        if (index < 2) {
+          uploads[inviteKey][index] = { data: photo.photo_url, approved: false, published: false, challengeLabel: photo.mission_label, isUrl: true };
+        }
+      });
+    }
+  }
+
   for (let i = 0; i < 2; i++) {
     updatePreview(i);
   }
@@ -1318,7 +1369,7 @@ async function updatePreview(slot) {
   const [a, b] = getUploadsForInvite(state.currentInviteName);
   const arr = [a, b];
   const upload = arr[slot];
-  const dataUrl = upload && upload.data;
+  const dataUrl = upload && upload.data; // This can be a data URL or a public URL
   
   const imgPreview = slotPreviews[slot];
   const zone = slotZones[slot];
@@ -1331,7 +1382,11 @@ async function updatePreview(slot) {
 
   if (dataUrl) {
     const shouldUseFrame = frameToggle && frameToggle.checked && state.frame;
-    imgPreview.src = shouldUseFrame ? await applyFrame(dataUrl) : dataUrl;
+    if (upload.isUrl) {
+      imgPreview.src = dataUrl; // It's already a URL
+    } else {
+      imgPreview.src = shouldUseFrame ? await applyFrame(dataUrl) : dataUrl;
+    }
     imgPreview.classList.remove('hidden');
     zone.querySelector('.drop__hint').classList.add('hidden');
   } else {
@@ -1341,28 +1396,64 @@ async function updatePreview(slot) {
   }
 }
 
-function clearSlot(i) {
+async function clearSlot(i) {
   const key = state.currentInviteName;
   if (!key) return;
+
   const entry = uploads[key] || [null, null];
+  const upload = entry[i];
+
+  if (upload && upload.data) {
+    if (upload.isUrl) {
+      const fileName = upload.data.split('/').pop();
+      await supabaseClient.storage.from('photos').remove([fileName]);
+      await supabaseClient.from('photos').delete().eq('photo_url', upload.data);
+    }
+  }
+
   entry[i] = null;
   uploads[key] = entry;
-  saveUploads();
+  saveUploads(); // Still save to local storage for immediate UI updates
   loadUploadsForInvite(key);
 }
 
 async function handleImageSelected(slot, file) {
   showLoading();
   try {
-    const dataUrl = await compressImageToDataUrl(file); // Just compress, don't frame yet
-    const key = state.currentInviteName;
-    if (!key) {
+    const inviteKey = state.currentInviteName;
+    if (!inviteKey) {
       console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
       return;
     }
-    setUploadForInvite(key, slot, dataUrl);
-    await updatePreview(slot); // New function to handle preview with/without frame
-    showToast(`${t('photoSaved')} ${slot+1}`);
+
+    const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
+    const { data, error } = await supabaseClient.storage
+      .from('photos')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
+
+    const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
+    const { error: dbError } = await supabaseClient.from('photos').insert({
+      guest_key: inviteKey,
+      mission_label: challengeLabel,
+      photo_url: publicUrl,
+    });
+
+    if (dbError) {
+      throw dbError;
+    }
+    
+    setUploadForInvite(key, slot, publicUrl); // We might need to adjust this function
+    await updatePreview(slot);
+    showToast(`${t('photoSaved')} ${slot + 1}`);
     loadUploadsForInvite(key);
   } catch (e) {
     console.error(`[handleImageSelected] Error processing image:`, e);
@@ -1388,17 +1479,16 @@ function handleAdminActionOnUpload(action, inviteKey, slot) {
   renderGallery();
 }
 
-function renderGallery() {
+async function renderGallery() {
   const columnsWrap = document.getElementById('gallery-columns');
   let placeholder = document.getElementById('gallery-placeholder');
 
-  if (!columnsWrap) return; // Bail if the main container isn't there
+  if (!columnsWrap) return;
 
-  // If placeholder is missing from HTML (e.g., old cached version), create it dynamically
   if (!placeholder) {
     placeholder = document.createElement('div');
     placeholder.id = 'gallery-placeholder';
-    placeholder.className = 'card card--light hidden'; // Start hidden
+    placeholder.className = 'card card--light hidden';
     placeholder.style.textAlign = 'center';
     placeholder.style.padding = '32px';
     placeholder.style.marginBottom = '12px';
@@ -1410,16 +1500,24 @@ function renderGallery() {
   }
 
   columnsWrap.innerHTML = '';
+
+  const { data, error } = await supabaseClient
+    .from('photos')
+    .select('*')
+    .eq('status', 'published')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching gallery photos:', error);
+    return;
+  }
+
   const byChallenge = new Map();
-  for (const [inviteKey, arr] of Object.entries(uploads)) {
-    const display = state.nameMap[inviteKey] || inviteKey;
-    (arr || []).forEach((up) => {
-      if (up && up.data && up.published) {
-        const label = up.challengeLabel || t('mission');
-        if (!byChallenge.has(label)) byChallenge.set(label, []);
-        byChallenge.get(label).push({ img: up.data, label, invite: display, inviteKey });
-      }
-    });
+  for (const photo of data) {
+    const display = state.nameMap[photo.guest_key] || photo.guest_key;
+    const label = photo.mission_label || t('mission');
+    if (!byChallenge.has(label)) byChallenge.set(label, []);
+    byChallenge.get(label).push({ img: photo.photo_url, label, invite: display, inviteKey: photo.guest_key });
   }
   
   if (byChallenge.size === 0) {
@@ -1443,16 +1541,7 @@ function renderGallery() {
       div.className = 'gallery-item';
       const likes = getLikesFor(inviteKey, img);
       let timeInfo = '';
-      const [u0,u1] = getUploadsForInvite(inviteKey);
-      const uploadsTimes = [u0&&u0.createdAt, u1&&u1.createdAt].filter(Boolean);
-      const approvedTimes = [u0&&u0.approvedAt, u1&&u1.approvedAt].filter(Boolean);
-      if (uploadsTimes.length === 2 && approvedTimes.length === 2) {
-        const start = Math.min(...uploadsTimes);
-        const end = Math.max(...approvedTimes);
-        const ms = Math.max(0, end - start);
-        const mins = Math.floor(ms/60000); const secs = Math.floor((ms%60000)/1000);
-        timeInfo = `${t('challengeCompleted')} ${mins}m${secs.toString().padStart(2,'0')}s 🎯`;
-      }
+      // Time calculation logic might need adjustment if we don't have all photo data locally
       div.innerHTML = `<img src="${img}" alt="${escapeHtml(label)}"/>
         <div class="badge">${escapeHtml(invite)}</div>
         <button class="like" type="button" aria-label="${t('likeLabel')}"><span>❤️</span><span class="like-count">${likes}</span></button>
@@ -1759,5 +1848,5 @@ function renderAdminStats() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init, { once: true });
 } else {
-  queueMicrotask(init);
+  init();
 }

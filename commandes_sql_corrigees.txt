@@ -1,0 +1,20 @@
+-- SQL pour créer la table des missions (si elle n'existe pas déjà)
+CREATE TABLE IF NOT EXISTS missions (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  mission_number INT NOT NULL,
+  fr TEXT,
+  es TEXT
+);
+
+-- Commande pour supprimer la table 'photos' si elle a été mal créée
+DROP TABLE IF EXISTS photos;
+
+-- SQL corrigé pour créer la table des photos
+CREATE TABLE photos (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  guest_key TEXT NOT NULL,
+  mission_label TEXT,
+  photo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  status TEXT DEFAULT 'pending'
+);

@@ -1,0 +1,17 @@
+-- SQL pour créer la table des missions
+CREATE TABLE missions (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  mission_number INT NOT NULL,
+  fr TEXT,
+  es TEXT
+);
+
+-- SQL pour créer la table des photos
+CREATE TABLE photos (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  guest_key TEXT NOT NULL,
+  mission_label TEXT,
+  photo_url TEXT,
+  created_at TIMESTAMTPLOCAL DEFAULT NOW(),
+  status TEXT DEFAULT 'pending'
+);

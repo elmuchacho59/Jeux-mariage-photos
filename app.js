@@ -1736,7 +1736,7 @@ async function openLiveCapture(slot) {
   const overlay = document.createElement('div');
   
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
     
     overlay.style.position = 'fixed'; 
     overlay.style.inset = '0'; 

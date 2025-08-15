@@ -814,16 +814,6 @@ function buildZipBlob(files) {
   return new Blob(chunks, { type: 'application/zip' });
 }
 
-function updateLangButtons() {
-    const langFrBtn = document.getElementById('lang-fr');
-    const langEsBtn = document.getElementById('lang-es');
-    if (!langFrBtn || !langEsBtn) return;
-  
-    const currentLang = document.documentElement.lang || 'fr';
-    langFrBtn.classList.toggle('active', currentLang === 'fr');
-    langEsBtn.classList.toggle('active', currentLang === 'es');
-  }
-
 function init() {
   const langFrBtn = document.getElementById('lang-fr');
   const langEsBtn = document.getElementById('lang-es');
@@ -839,7 +829,6 @@ function init() {
       window.location.href = 'index.es.html';
     });
   }
-  updateLangButtons();
   guestFlowSection = $("#guest-flow-section");
   stepWelcome = $("#step-welcome");
   stepMissions = $("#step-missions");

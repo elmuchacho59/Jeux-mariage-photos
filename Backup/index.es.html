@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Misión Fotográfica - Boda</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%F0%9F%92%93%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="brand">
+          <a href="/" style="text-decoration: none; color: inherit;">
+            <h1>Hello, BINGO!</h1>
+          </a>
+          <p class="subtitle">Selecciona tus misiones y comparte tus fotos 🎉</p>
+        </div>
+        <div class="header-actions">
+          <div class="language-switcher">
+            <button id="lang-fr" class="btn" style="font-size: 1.5rem; padding: 0.25rem 0.5rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 3 2"><path fill="#002395" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ED2939" d="M2 0h1v2H2z"/></svg>
+            </button>
+            <button id="lang-es" class="btn active" style="font-size: 1.5rem; padding: 0.25rem 0.5rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 3 2"><path fill="#C60B1E" d="M0 0h3v0.5H0z"/><path fill="#FFC400" d="M0 0.5h3v1H0z"/><path fill="#C60B1E" d="M0 1.5h3v0.5H0z"/></svg>
+            </button>
+          </div>
+          <button id="go-gallery-btn" class="btn">Galería</button>
+          <button id="go-admin-btn" class="btn">Admin</button>
+        </div>
+      </header>
+
+      <section class="guest-flow" id="guest-flow-section">
+        <!-- Step 1: Welcome -->
+        <div class="guest-flow__step active" id="step-welcome">
+            <div class="card intro">
+                <div class="intro__content">
+                    <h2>¡Hola, BINGO! ✨</h2>
+                    <p class="subtitle">Ingresa tu nombre y ¡listo!</p>
+                    <div id="access-banner" class="alert hidden">Acceso reservado para invitados. Ingresa tu nombre como aparece en la lista y la contraseña si es requerida.</div>
+                    <div class="intro__form">
+                        <label for="invite-name" class="sr-only">Nombre del invitado</label>
+                        <input id="invite-name" class="input input-lg" type="text" placeholder="Tu nombre (ej: Sofía)" list="invite-names" />
+                        <button id="start-btn" class="btn primary btn-lg">Empezar</button>
+                    </div>
+                    <datalist id="invite-names"></datalist>
+                    <div class="intro__form intro__form--pass hidden" id="event-pass-row">
+                        <input id="event-pass" class="input input-lg" type="text" placeholder="Contraseña del evento" />
+                        <button id="event-pass-help" class="btn" type="button" title="Ayuda contraseña">?</button>
+                        <button id="event-pass-toggle" class="btn" type="button" aria-pressed="true" title="Ocultar/Mostrar">👁</button>
+                    </div>
+                    <div class="intro__form intro__form--pass hidden" id="invite-pass-row">
+                        <input id="invite-pass" class="input input-lg" type="text" placeholder="Contraseña (DD/MM/AAAA)" />
+                        <button id="invite-pass-help" class="btn" type="button" title="Ayuda contraseña">?</button>
+                        <button id="invite-pass-toggle" class="btn" type="button" aria-pressed="true" title="Ocultar/Mostrar">👁</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Missions & Upload -->
+        <div class="guest-flow__step" id="step-missions">
+            <div class="card">
+                <div class="invite-header">
+                    <div>
+                        <div class="invite-name" id="current-invite">Invitado</div>
+                        <div class="invite-progress"><span id="assigned-count">0</span>/2 misiones asignadas</div>
+                    </div>
+                    <div class="actions">
+                        <button id="next-invite-btn" class="btn">Cambiar de invitado</button>
+                    </div>
+                </div>
+
+                <div id="mission-selection-panel">
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <img src="card-illustration.svg" alt="Ejemplo de tarjeta de juego" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px;">
+                        <p class="helper">Mira tu tarjeta de juego y selecciona los dos números de misión que te han sido asignados a continuación.</p>
+                    </div>
+                    <div class="card card--light" style="margin-bottom:8px;">
+                        <h3>Elige tus misiones</h3>
+                        <div class="row" style="gap:8px;">
+                            <select id="mission1" class="input" title="Misión 1"></select>
+                            <select id="mission2" class="input" title="Misión 2"></select>
+                            <button id="mission-confirm-btn" class="btn primary">Validar</button>
+                            <button id="mission-reset-btn" class="btn">Reiniciar</button>
+                        </div>
+                        <div class="helper">Para empezar, selecciona los dos números de misión indicados en tu tarjeta de juego.</div>
+                    </div>
+                </div>
+
+                <div id="mission-display-panel" class="hidden">
+                    <div id="mission-consignes" class="card card--light">
+                        <h3>Mis misiones</h3>
+                        <div class="card card--light" style="margin-top:12px; text-align:center;">
+                        <p>¡Genial! Ahora, completa estas dos misiones fotográficas para intentar ganar el gran premio de "Hello, BINGO!" 🏆</p>
+                    </div>
+                    </div>
+
+                    <section class="card card--light upload" id="upload-section">
+                        <h3>Sube tus 2 fotos</h3>
+                        <div style="text-align: center; padding: 12px; background-color: var(--bg-primary); border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px; color: var(--primary-color);"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                          <span style="font-weight: 600; color: var(--text-primary);">¡A jugar! ¡Saca tus mejores fotos!</span>
+                        </div>
+                        <div class="upload__grid">
+                            <div class="drop" data-slot="0">
+                                <div class="drop__label" id="slot0-label">Misión 1</div>
+                                <div class="drop__zone" id="slot0-zone">
+                                    <input type="file" id="slot0-input" accept="image/*;capture=camera" capture="environment" class="drop__input" />
+                                    
+                                    <div class="drop__hint">Arrastra una imagen o haz clic</div>
+                                    <img id="slot0-preview" class="drop__preview hidden" alt="Vista previa foto 1" />
+                                </div>
+                                <div class="drop__actions">
+                                    <button id="slot0-live-btn" class="btn primary">Tomar una foto</button>
+                                    <button id="slot0-gallery-btn" class="btn">Elegir una foto</button>
+                                    <button id="slot0-clear" class="btn">Borrar</button>
+                                </div>
+                                <div class="frame-toggle-wrapper hidden" id="frame-toggle-wrapper-0" style="font-size: 14px; margin-top: 4px;">
+                                  <input type="checkbox" id="frame-toggle-input-0" checked>
+                                  <label for="frame-toggle-input-0">Aplicar el marco</label>
+                                </div>
+                            </div>
+                            <div class="drop" data-slot="1">
+                                <div class="drop__label" id="slot1-label">Misión 2</div>
+                                <div class="drop__zone" id="slot1-zone">
+                                    <input type="file" id="slot1-input" accept="image/*;capture=camera" capture="environment" class="drop__input" />
+                                    
+                                    <div class="drop__hint">Arrastra una imagen o haz clic</div>
+                                    <img id="slot1-preview" class="drop__preview hidden" alt="Vista previa foto 2" />
+                                </div>
+                                <div class="drop__actions">
+                                    <button id="slot1-live-btn" class="btn primary">Tomar una foto</button>
+                                    <button id="slot1-gallery-btn" class="btn">Elegir una foto</button>
+                                    <button id="slot1-clear" class="btn">Borrar</button>
+                                </div>
+                                <div class="frame-toggle-wrapper hidden" id="frame-toggle-wrapper-1" style="font-size: 14px; margin-top: 4px;">
+                                  <input type="checkbox" id="frame-toggle-input-1" checked>
+                                  <label for="frame-toggle-input-1">Aplicar el marco</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top:8px; justify-content:flex-end; gap:8px;">
+                            <button id="submit-missions-btn" class="btn primary" disabled>Enviar</button>
+                        </div>
+                        <div id="submission-msg" class="helper hidden">Misiones enviadas 🎉 ¡Eres genial!</div>
+                        <div id="frame-toggle-wrapper" class="hidden" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                          <input type="checkbox" id="frame-toggle-input" checked>
+                          <label for="frame-toggle-input">Aplicar el marco de fotos</label>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="guest-flow__step" id="step-confirmation">
+            <div class="card intro">
+                <div class="intro__content">
+                    <h2>¡Gracias por participar! ✨</h2>
+                    <p class="subtitle">¡Ya está hecho! 📸 Ve a ver al maestro del juego para que valide tus fotos y finalice tu participación. ¡Buena suerte!</p>
+                    <div class="row" style="justify-content:center;">
+                        <button id="confirmation-gallery-btn" class="btn primary">Ver la galería</button>
+                        <button id="confirmation-new-guest-btn" class="btn">Nuevo invitado</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+      <section class="card hidden" id="admin-section">
+        <div class="admin-header">
+          <h2>Admin</h2>
+          <div class="actions">
+            <button id="admin-refresh" class="btn">Actualizar</button>
+            <button id="admin-copy" class="btn">Copiar</button>
+            <button id="admin-export" class="btn">Exportar CSV</button>
+            <button id="admin-export-zip" class="btn">Exportar ZIP</button>
+            <button id="admin-logout" class="btn danger">Cerrar sesión</button>
+            <button id="admin-exit" class="btn primary">Volver</button>
+          </div>
+        </div>
+
+        <div class="card card--light stats-grid">
+          <div class="stat-card">
+            <h4>Participantes</h4>
+            <div id="stats-participants" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <h4>Fotos pendientes</h4>
+            <div id="stats-pending" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <h4>Fotos publicadas</h4>
+            <div id="stats-published" class="stat-value">0</div>
+          </div>
+        </div>
+
+        <div class="card card--light" style="margin-top:12px;">
+          <h3>Fotos (flujo de trabajo)</h3>
+          <div class="tabs">
+            <button id="admin-tab-pending" class="tab active">Pendientes</button>
+            <button id="admin-tab-published" class="tab">Publicadas</button>
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <label class="helper">Ordenar por</label>
+            <select id="admin-photo-sort" class="input input-sm">
+              <option value="date_desc">Más recientes primero</option>
+              <option value="date_asc">Más antiguos primero</option>
+              <option value="likes_desc">Más me gusta (publicadas)</option>
+            </select>
+            <button id="admin-delete-all-photos" class="btn danger" style="margin-left:auto;">Eliminar todas las fotos</button>
+          </div>
+          <div id="admin-photos-pending">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniatura</th>
+                  <th>Invitado</th>
+                  <th>Misión</th>
+                  <th>Enviada</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-pending-tbody"></tbody>
+            </table>
+          </div>
+          <div id="admin-photos-published" class="hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Miniatura</th>
+                  <th>Invitado</th>
+                  <th>Misión</th>
+                  <th>Publicada</th>
+                  <th>Me gusta</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="admin-photos-published-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Acceso de invitados</h3>
+          <div class="row" style="align-items:center; gap:12px;">
+            <label class="helper">¿Quién puede acceder?</label>
+            <select id="access-mode" class="input input-sm">
+              <option value="all">Todos (acceso abierto)</option>
+              <option value="guests_only">Solo invitados listados</option>
+            </select>
+          </div>
+        </div>
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Acceso al evento</h3>
+          <div class="row" style="align-items:center; gap:8px;">
+            <label class="helper">¿Se requiere contraseña?</label>
+            <select id="event-required" class="input input-sm">
+              <option value="no">No</option>
+              <option value="yes">Sí</option>
+            </select>
+            <input id="event-pass-admin" class="input" placeholder="Contraseña del evento" />
+            <button id="event-pass-save" class="btn primary">Guardar</button>
+            <button id="admin-reset-settings" class="btn danger" title="Restablecer la configuración predeterminada">Restablecer config.</button>
+          </div>
+          <div class="helper">Consejo: usa una palabra simple para comunicar a los invitados (ej: un código relacionado con la boda).</div>
+        </div>
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Misiones</h3>
+          <div class="missions-grid">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Consigna (FR)</th>
+                  <th>Consigna (ES)</th>
+                </tr>
+              </thead>
+              <tbody id="missions-tbody"></tbody>
+            </table>
+            <div class="helper">Estas consignas se propondrán a los invitados según el número de misión elegido.</div>
+          </div>
+          <div class="actions" style="margin-top:8px;">
+            <button id="missions-save" class="btn primary">Guardar misiones</button>
+          </div>
+        </div>
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Invitados</h3>
+          <div class="row" style="margin-bottom:8px;">
+            <input id="admin-guest-name" class="input" placeholder="Nombre del invitado" />
+            <input id="admin-guest-pass" class="input" placeholder="Contraseña (opcional)" />
+            <button id="admin-guest-add" class="btn primary">Añadir</button>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Invitado</th>
+                <th>Contraseña</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="admin-guests-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="card card--light" style="margin-bottom:12px;">
+          <h3>Marco de Foto</h3>
+          <div class="row" style="align-items:center; gap:12px;">
+            <input type="file" id="frame-upload-input" accept="image/png" class="input">
+            <button id="frame-save-btn" class="btn primary">Guardar</button>
+            <button id="frame-delete-btn" class="btn danger">Eliminar</button>
+          </div>
+          <div class="helper">Sube un marco en formato PNG con una zona transparente. Se aplicará a todas las fotos.</div>
+          <div style="margin-top:12px;">
+            <h4>Vista previa del marco actual:</h4>
+            <img id="frame-preview-img" src="" alt="Vista previa del marco" style="max-width:200px; border:1px solid var(--border-color); background: repeating-conic-gradient(#eee 0 25%, transparent 0 50%) 0 0 / 20px 20px;"/>
+          </div>
+        </div>
+
+        <div class="admin-tools">
+          <input id="admin-search" class="input" placeholder="Buscar un invitado…" />
+        </div>
+        <div class="actions" style="margin-top:8px;">
+          <button id="admin-reset-all" class="btn danger" title="Borrar todos los datos locales">Restablecer todo</button>
+        </div>
+        <div class="card card--light" style="margin-top:12px;">
+          <h3>Clasificación (tiempo de realización)</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Invitado</th>
+                <th>Tiempo</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card hidden" id="gallery-section">
+        <div class="admin-header">
+          <h2>Galería</h2>
+          <div class="actions">
+            <button id="gallery-exit" class="btn primary">Volver</button>
+          </div>
+        </div>
+        <div id="gallery-placeholder" class="card card--light hidden" style="text-align: center; padding: 32px; margin-bottom: 12px;">
+          <h3>¡El álbum todavía está vacío!</h3>
+          <p class="subtitle">Queridos invitados, ¡a sus cámaras! La galería espera sus obras maestras. 📸</p>
+        </div>
+        <div id="gallery-columns" class="gallery-columns" style="margin-bottom:12px;"></div>
+        
+      </section>
+
+      <div id="lightbox" class="lightbox hidden" aria-modal="true" role="dialog">
+        <div class="lightbox__backdrop" id="lightbox-backdrop"></div>
+        <div class="lightbox__content" role="document">
+          <img id="lightbox-img" class="lightbox__img" alt="Ampliación" />
+          <div id="lightbox-caption" class="lightbox__caption"></div>
+          <div class="lightbox__actions">
+            <a id="lightbox-download" class="btn primary" download>Descargar</a>
+            <button id="lightbox-close" class="btn">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        
+        <small>Hecho con amor ❤️ por Christina y Vincent en París</small>
+      </footer>
+    </main>
+
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <canvas id="confetti-canvas" class="confetti" width="0" height="0" aria-hidden="true"></canvas>
+
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

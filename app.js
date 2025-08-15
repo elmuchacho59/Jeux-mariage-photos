@@ -1471,20 +1471,43 @@ async function handleImageSelected(slot, file) {
   }
 }
 
-function handleAdminActionOnUpload(action, inviteKey, slot) {
-  const entry = uploads[inviteKey] || [null, null];
-  const item = entry[slot];
+async function handleAdminActionOnUpload(action, inviteKey, slot) {
+  const item = (uploads[inviteKey] || [])[slot];
   if (!item) return;
+
   if (action === 'publish') {
-    item.approved = true;
-    item.published = true;
-    item.approvedAt = item.approvedAt || Date.now();
-    item.publishedAt = Date.now();
+    showLoading();
+    try {
+      const { error } = await supabase
+        .from('uploads')
+        .update({ 
+          approved: true, 
+          published: true, 
+          approved_at: new Date().toISOString(),
+          published_at: new Date().toISOString()
+        })
+        .match({ invite_key: inviteKey, slot: slot });
+
+      if (error) {
+        console.error('Error publishing upload:', error);
+        showToast('Erreur lors de la publication.', 'danger');
+        return;
+      }
+
+      // Mettre à jour l'état local APRES la réussite de la BDD
+      item.approved = true;
+      item.published = true;
+      item.approvedAt = item.approvedAt || Date.now();
+      item.publishedAt = Date.now();
+      saveUploads();
+      renderAdminTable();
+      renderGallery(); // Mettre à jour la galerie aussi
+      showToast('Photo publiée !');
+
+    } finally {
+      hideLoading();
+    }
   }
-  uploads[inviteKey] = entry;
-  saveUploads();
-  renderAdminTable();
-  renderGallery();
 }
 
 function renderGallery() {

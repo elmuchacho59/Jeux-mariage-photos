@@ -830,13 +830,15 @@ function init() {
 
   if (langFrBtn) {
     langFrBtn.addEventListener('click', () => {
-      window.location.href = 'index.html';
+      const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
+      window.location.href = path + 'index.html';
     });
   }
 
   if (langEsBtn) {
     langEsBtn.addEventListener('click', () => {
-      window.location.href = 'index.es.html';
+      const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
+      window.location.href = path + 'index.es.html';
     });
   }
   updateLangButtons();

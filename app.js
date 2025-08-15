@@ -228,7 +228,7 @@ const state = {
   guests: loadGuests(),
   accessMode: loadAccessMode(),
   eventAccess: loadEventPass(),
-  missions: await loadMissions(),
+  missions: {}, // Will be loaded in init()
   frame: localStorage.getItem(FRAME_KEY) || null,
 };
 
@@ -845,336 +845,349 @@ function updateLangButtons() {
   }
 
 async function init() {
-  const langFrBtn = document.getElementById('lang-fr');
-  const langEsBtn = document.getElementById('lang-es');
-
-  if (langFrBtn) {
-    langFrBtn.addEventListener('click', () => {
-      const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
-      window.location.href = path + 'index.html';
-    });
-  }
-
-  if (langEsBtn) {
-    langEsBtn.addEventListener('click', () => {
-      const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
-      window.location.href = path + 'index.es.html';
-    });
-  }
-  updateLangButtons();
-  guestFlowSection = $("#guest-flow-section");
-  stepWelcome = $("#step-welcome");
-  stepMissions = $("#step-missions");
-  stepConfirmation = $("#step-confirmation");
-  missionSelectionPanel = $("#mission-selection-panel");
-  missionDisplayPanel = $("#mission-display-panel");
-  confirmationGalleryBtn = $("#confirmation-gallery-btn");
-  confirmationNewGuestBtn = $("#confirmation-new-guest-btn");
-  currentInviteEl = $("#current-invite");
-  assignedCountEl = $("#assigned-count");
-  assignedItemsEl = $("#assigned-items");
-  challengeListEl = $("#challenge-list");
-  mission1El = document.getElementById('mission1');
-  mission2El = document.getElementById('mission2');
-  missionConfirmBtn = document.getElementById('mission-confirm-btn');
-  missionResetBtn = document.getElementById('mission-reset-btn');
-  missionsTbody = document.getElementById('missions-tbody');
-  missionsSaveBtn = document.getElementById('missions-save');
-  missionConsignesCard = document.getElementById('mission-consignes');
-  missionConsignesList = document.getElementById('mission-consignes-list');
-  accessBannerEl = document.getElementById('access-banner');
-  invitePassInput = document.getElementById('invite-pass');
-  invitePassRow = document.getElementById('invite-pass-row');
-  inviteNamesDatalist = document.getElementById('invite-names');
-  eventPassRow = document.getElementById('event-pass-row');
-  eventPassInput = document.getElementById('event-pass');
-  spinBtn = $("#spin-btn");
-  lockedNoteEl = $("#locked-note");
-  progressBarEl = $("#progress-bar");
-  toastContainer = $("#toast-container");
-  confettiCanvas = $("#confetti-canvas");
-  goAdminBtn = $("#go-admin-btn");
-  goGalleryBtn = $("#go-gallery-btn");
-  adminSection = $("#admin-section");
-  adminExitBtn = $("#admin-exit");
-  gallerySection = document.getElementById('gallery-section');
-  galleryExitBtn = document.getElementById('gallery-exit');
-  lightboxEl = document.getElementById('lightbox');
-  lightboxBackdrop = document.getElementById('lightbox-backdrop');
-  lightboxImg = document.getElementById('lightbox-img');
-  lightboxCaption = document.getElementById('lightbox-caption');
-  lightboxDownload = document.getElementById('lightbox-download');
-  lightboxClose = document.getElementById('lightbox-close');
-  adminRefreshBtn = $("#admin-refresh");
-  adminCopyBtn = $("#admin-copy");
-  adminExportBtn = $("#admin-export");
-  adminExportZipBtn = $("#admin-export-zip");
-  adminLogoutBtn = $("#admin-logout");
-  adminSearchInput = $("#admin-search");
-  adminTbody = $("#admin-tbody");
-  adminResetAllBtn = $("#admin-reset-all");
-  
-  adminGuestName = $("#admin-guest-name");
-  adminGuestPass = $("#admin-guest-pass");
-  adminGuestAddBtn = $("#admin-guest-add");
-  adminGuestsTbody = $("#admin-guests-tbody");
-  accessModeSelect = $("#access-mode");
-  adminTabPending = $("#admin-tab-pending");
-  adminTabPublished = $("#admin-tab-published");
-  adminPhotosPendingTbody = $("#admin-photos-pending-tbody");
-  adminPhotosPublishedTbody = $("#admin-photos-published-tbody");
-  eventRequiredSelect = document.getElementById('event-required');
-  eventPassAdminInput = document.getElementById('event-pass-admin');
-  eventPassSaveBtn = document.getElementById('event-pass-save');
-  adminResetSettingsBtn = document.getElementById('admin-reset-settings');
-  adminDeleteAllPhotosBtn = document.getElementById('admin-delete-all-photos');
-  uploadSection = $("#upload-section");
-  slotInputs = [$("#slot0-input"), $("#slot1-input")];
-  slotPreviews = [$("#slot0-preview"), $("#slot1-preview")];
-  slotZones = [$("#slot0-zone"), $("#slot1-zone")];
-  slotClears = [$("#slot0-clear"), $("#slot1-clear")];
-  slotLiveBtns = [document.getElementById('slot0-live-btn'), document.getElementById('slot1-live-btn')];
-  slotGalleryBtns = [document.getElementById('slot0-gallery-btn'), document.getElementById('slot1-gallery-btn')];
-  submitMissionsBtn = document.getElementById('submit-missions-btn');
-  submissionMsgEl = document.getElementById('submission-msg');
-  loadingOverlayEl = document.getElementById('loading-overlay');
-
-  const startBtn = document.getElementById("start-btn");
-  const inviteInput = document.getElementById("invite-name");
-  const nextInviteBtn = document.getElementById("next-invite-btn");
-  if (startBtn) startBtn.addEventListener("click", () => startForInvite(inviteInput && inviteInput.value));
-  if (inviteInput) inviteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
-  if (nextInviteBtn) nextInviteBtn.addEventListener("click", () => resetToInviteInput());
-  if (missionConfirmBtn) missionConfirmBtn.addEventListener('click', onConfirmMissions);
-  if (missionResetBtn) missionResetBtn.addEventListener('click', () => {
-    if (mission1El) { mission1El.selectedIndex = 0; }
-    if (mission2El) { mission2El.selectedIndex = 0; }
-    if (missionConsignesCard) { missionConsignesCard.classList.add('hidden'); if (missionConsignesList) missionConsignesList.innerHTML = ''; }
-    showToast(t('missionsReset'));
-  });
-
-  if (goAdminBtn) goAdminBtn.addEventListener("click", openAdmin);
-  if (goGalleryBtn) goGalleryBtn.addEventListener('click', openGallery);
-  if (adminExitBtn) adminExitBtn.addEventListener("click", closeAdmin);
-  if (galleryExitBtn) galleryExitBtn.addEventListener('click', closeGallery);
-  if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", renderAdminTable);
-  if (adminCopyBtn) adminCopyBtn.addEventListener("click", () => { copyAdminData(); renderAdminPhotos(); });
-  if (adminExportBtn) adminExportBtn.addEventListener("click", exportCSV);
-  if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
-  if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
-    try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
-    showToast(t('adminDisconnected'));
-    closeAdmin();
-  });
-  if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
-  if (adminResetAllBtn) adminResetAllBtn.addEventListener("click", () => {
-    if (confirm(t("deleteAllDataConfirmation"))) {
-      clearAllAssignments();
-      clearAllUploads();
-      renderAdminTable();
-      showToast(t("dataCleared"));
+  try {
+    if (typeof supabase === 'undefined' || !supabase) {
+      throw new Error("Le client Supabase n'est pas disponible. L'application ne peut pas démarrer.");
     }
-  });
-
-  let frameUploadInput, frameSaveBtn, frameDeleteBtn, framePreviewImg;
+    state.missions = await loadMissions(); // Load missions first
   
-  frameUploadInput = document.getElementById('frame-upload-input');
-  frameSaveBtn = document.getElementById('frame-save-btn');
-  frameDeleteBtn = document.getElementById('frame-delete-btn');
-  framePreviewImg = document.getElementById('frame-preview-img');
+    const langFrBtn = document.getElementById('lang-fr');
+    const langEsBtn = document.getElementById('lang-es');
 
-  if (frameUploadInput && frameSaveBtn && frameDeleteBtn && framePreviewImg) {
-    frameSaveBtn.addEventListener('click', () => {
-      const file = frameUploadInput.files[0];
-      if (!file) {
-        showToast(t("selectFile"), "danger");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.frame = e.target.result;
-        localStorage.setItem(FRAME_KEY, state.frame);
-        framePreviewImg.src = state.frame;
-        showToast(t("frameSaved"));
-      };
-      reader.readAsDataURL(file);
-    });
-
-    frameDeleteBtn.addEventListener('click', () => {
-      state.frame = null;
-      localStorage.removeItem(FRAME_KEY);
-      framePreviewImg.src = '';
-      showToast(t("frameDeleted"));
-    });
-
-    if (state.frame) {
-      framePreviewImg.src = state.frame;
-    }
-  }
-
-  if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', saveMissions);
-
-  if (accessModeSelect) {
-    accessModeSelect.value = state.accessMode;
-    accessModeSelect.addEventListener('change', () => {
-      state.accessMode = accessModeSelect.value; saveAccessMode();
-      showToast(t("accessModeUpdated"));
-    });
-  }
-
-  if (eventRequiredSelect && eventPassAdminInput && eventPassSaveBtn) {
-    eventRequiredSelect.value = state.eventAccess.required ? 'yes' : 'no';
-    eventPassAdminInput.value = state.eventAccess.password || '';
-    eventPassSaveBtn.addEventListener('click', () => {
-      const required = (eventRequiredSelect.value === 'yes');
-      const pwd = (eventPassAdminInput.value || '').trim();
-      if (required && !pwd) { 
-        showToast(t('eventPasswordRequired'), 'danger'); 
-        return; 
-      }
-      state.eventAccess.required = required;
-      state.eventAccess.password = pwd;
-      saveEventPass();
-      if (eventPassRow) eventPassRow.classList.toggle('hidden', !required);
-      if (!required && eventPassInput) {
-        eventPassInput.value = '';
-        eventPassInput.classList.remove('is-valid','is-invalid');
-      }
-      showToast(t('eventPasswordUpdated'));
-    });
-  }
-
-  const adminPhotoSort = document.getElementById('admin-photo-sort');
-  if (adminPhotoSort) adminPhotoSort.addEventListener('change', renderAdminPhotos);
-
-  if (adminResetSettingsBtn) adminResetSettingsBtn.addEventListener('click', () => {
-    if (!confirm(t('resetSettingsConfirmation'))) return;
-    state.challenges = [...DEFAULT_CHALLENGES]; saveChallenges();
-    state.accessMode = 'all'; saveAccessMode();
-    state.eventAccess = { required: false, password: '' }; saveEventPass();
-    if (adminChallengesTextarea) adminChallengesTextarea.value = state.challenges.join('\n');
-    if (accessModeSelect) accessModeSelect.value = 'all';
-    if (eventRequiredSelect) eventRequiredSelect.value = 'no';
-    if (eventPassAdminInput) eventPassAdminInput.value = '';
-    if (eventPassRow) eventPassRow.classList.add('hidden');
-    showToast(t('settingsReset'));
-  });
-
-  if (adminDeleteAllPhotosBtn) adminDeleteAllPhotosBtn.addEventListener('click', () => {
-    if (!confirm(t('deleteAllPhotosConfirmation'))) return;
-    uploads = {}; saveUploads();
-    renderAdminPhotos();
-    showToast(t('allPhotosDeleted'));
-  });
-
-  renderGallery();
-  
-  hydrateMissionSelectors();
-
-  if (accessBannerEl) {
-    accessBannerEl.classList.toggle('hidden', state.accessMode !== 'guests_only');
-  }
-
-  if (inviteNamesDatalist) {
-    inviteNamesDatalist.innerHTML = '';
-    if (state.accessMode === 'guests_only') {
-      Object.values(state.guests).forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.display;
-        inviteNamesDatalist.appendChild(opt);
+    if (langFrBtn) {
+      langFrBtn.addEventListener('click', () => {
+        const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
+        window.location.href = path + 'index.html';
       });
     }
-  }
 
-  const inviteInputEl = document.getElementById('invite-name');
-  if (inviteInputEl) {
-    inviteInputEl.addEventListener('input', () => {
-      if (state.accessMode !== 'guests_only') { if(invitePassRow) invitePassRow.classList.add('hidden'); return; }
-      const key = resolveInviteKey(inviteInputEl.value||'');
-      const guest = state.guests[key];
-      const needPass = !!(guest && guest.password);
-      if (invitePassRow) invitePassRow.classList.toggle('hidden', !needPass);
-    });
-  }
-
-  const passHelpBtn = document.getElementById('invite-pass-help');
-  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast(t('passwordHint')));
-  const passToggleBtn = document.getElementById('invite-pass-toggle');
-  if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
-    const isText = invitePassInput.type === 'text';
-    invitePassInput.type = isText ? 'password' : 'text';
-    passToggleBtn.setAttribute('aria-pressed', String(!isText));
-  });
-
-  if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
-  const eventHelpBtn = document.getElementById('event-pass-help');
-  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast(t('eventPasswordHint')));
-  const eventToggleBtn = document.getElementById('event-pass-toggle');
-  if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
-    const isText = eventPassInput.type === 'text';
-    eventPassInput.type = isText ? 'password' : 'text';
-    eventToggleBtn.setAttribute('aria-pressed', String(!isText));
-  });
-
-  if (eventPassInput) eventPassInput.addEventListener('input', ()=> {
-    if (!(state.eventAccess && state.eventAccess.required)) return;
-    const ok = eventPassInput.value === (state.eventAccess.password||'');
-    eventPassInput.classList.toggle('is-valid', ok);
-    eventPassInput.classList.toggle('is-invalid', !ok && eventPassInput.value.length>0);
-  });
-  if (invitePassInput) invitePassInput.addEventListener('input', ()=> {
-    if (state.accessMode !== 'guests_only') return;
-    const nameEl = document.getElementById('invite-name');
-    const key = resolveInviteKey((nameEl && nameEl.value)||'');
-    const guest = state.guests[key];
-    if (!(guest && guest.password)) return;
-    const ok = invitePassInput.value === guest.password;
-    invitePassInput.classList.toggle('is-valid', ok);
-    invitePassInput.classList.toggle('is-invalid', !ok && invitePassInput.value.length>0);
-  });
-
-  slotInputs.forEach((input, i) => {
-    if (!input) return;
-    input.addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) handleImageSelected(i, file);
-    });
-    const frameToggle = document.getElementById(`frame-toggle-input-${i}`);
-    if (frameToggle) {
-      frameToggle.addEventListener('change', () => updatePreview(i));
+    if (langEsBtn) {
+      langEsBtn.addEventListener('click', () => {
+        const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
+        window.location.href = path + 'index.es.html';
+      });
     }
-  });
+    updateLangButtons();
+    guestFlowSection = $("#guest-flow-section");
+    stepWelcome = $("#step-welcome");
+    stepMissions = $("#step-missions");
+    stepConfirmation = $("#step-confirmation");
+    missionSelectionPanel = $("#mission-selection-panel");
+    missionDisplayPanel = $("#mission-display-panel");
+    confirmationGalleryBtn = $("#confirmation-gallery-btn");
+    confirmationNewGuestBtn = $("#confirmation-new-guest-btn");
+    currentInviteEl = $("#current-invite");
+    assignedCountEl = $("#assigned-count");
+    assignedItemsEl = $("#assigned-items");
+    challengeListEl = $("#challenge-list");
+    mission1El = document.getElementById('mission1');
+    mission2El = document.getElementById('mission2');
+    missionConfirmBtn = document.getElementById('mission-confirm-btn');
+    missionResetBtn = document.getElementById('mission-reset-btn');
+    missionsTbody = document.getElementById('missions-tbody');
+    missionsSaveBtn = document.getElementById('missions-save');
+    missionConsignesCard = document.getElementById('mission-consignes');
+    missionConsignesList = document.getElementById('mission-consignes-list');
+    accessBannerEl = document.getElementById('access-banner');
+    invitePassInput = document.getElementById('invite-pass');
+    invitePassRow = document.getElementById('invite-pass-row');
+    inviteNamesDatalist = document.getElementById('invite-names');
+    eventPassRow = document.getElementById('event-pass-row');
+    eventPassInput = document.getElementById('event-pass');
+    spinBtn = $("#spin-btn");
+    lockedNoteEl = $("#locked-note");
+    progressBarEl = $("#progress-bar");
+    toastContainer = $("#toast-container");
+    confettiCanvas = $("#confetti-canvas");
+    goAdminBtn = $("#go-admin-btn");
+    goGalleryBtn = $("#go-gallery-btn");
+    adminSection = $("#admin-section");
+    adminExitBtn = $("#admin-exit");
+    gallerySection = document.getElementById('gallery-section');
+    galleryExitBtn = document.getElementById('gallery-exit');
+    lightboxEl = document.getElementById('lightbox');
+    lightboxBackdrop = document.getElementById('lightbox-backdrop');
+    lightboxImg = document.getElementById('lightbox-img');
+    lightboxCaption = document.getElementById('lightbox-caption');
+    lightboxDownload = document.getElementById('lightbox-download');
+    lightboxClose = document.getElementById('lightbox-close');
+    adminRefreshBtn = $("#admin-refresh");
+    adminCopyBtn = $("#admin-copy");
+    adminExportBtn = $("#admin-export");
+    adminExportZipBtn = $("#admin-export-zip");
+    adminLogoutBtn = $("#admin-logout");
+    adminSearchInput = $("#admin-search");
+    adminTbody = $("#admin-tbody");
+    adminResetAllBtn = $("#admin-reset-all");
+    
+    adminGuestName = $("#admin-guest-name");
+    adminGuestPass = $("#admin-guest-pass");
+    adminGuestAddBtn = $("#admin-guest-add");
+    adminGuestsTbody = $("#admin-guests-tbody");
+    accessModeSelect = $("#access-mode");
+    adminTabPending = $("#admin-tab-pending");
+    adminTabPublished = $("#admin-tab-published");
+    adminPhotosPendingTbody = $("#admin-photos-pending-tbody");
+    adminPhotosPublishedTbody = $("#admin-photos-published-tbody");
+    eventRequiredSelect = document.getElementById('event-required');
+    eventPassAdminInput = document.getElementById('event-pass-admin');
+    eventPassSaveBtn = document.getElementById('event-pass-save');
+    adminResetSettingsBtn = document.getElementById('admin-reset-settings');
+    adminDeleteAllPhotosBtn = document.getElementById('admin-delete-all-photos');
+    uploadSection = $("#upload-section");
+    slotInputs = [$("#slot0-input"), $("#slot1-input")];
+    slotPreviews = [$("#slot0-preview"), $("#slot1-preview")];
+    slotZones = [$("#slot0-zone"), $("#slot1-zone")];
+    slotClears = [$("#slot0-clear"), $("#slot1-clear")];
+    slotLiveBtns = [document.getElementById('slot0-live-btn'), document.getElementById('slot1-live-btn')];
+    slotGalleryBtns = [document.getElementById('slot0-gallery-btn'), document.getElementById('slot1-gallery-btn')];
+    submitMissionsBtn = document.getElementById('submit-missions-btn');
+    submissionMsgEl = document.getElementById('submission-msg');
+    loadingOverlayEl = document.getElementById('loading-overlay');
 
-  slotLiveBtns.forEach((btn, i) => {
-      if (!btn) return;
-      btn.addEventListener('click', () => slotInputs[i].click());
-  });
-
-  slotGalleryBtns.forEach((btn, i) => {
-      if (!btn) return;
-      btn.addEventListener('click', () => slotInputs[i].click());
-  });
-
-  slotZones.forEach((zone, i) => {
-    if (!zone) return;
-    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-    zone.addEventListener("drop", (e) => {
-      e.preventDefault(); zone.classList.remove("dragover");
-      const file = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (file) handleImageSelected(i, file);
+    const startBtn = document.getElementById("start-btn");
+    const inviteInput = document.getElementById("invite-name");
+    const nextInviteBtn = document.getElementById("next-invite-btn");
+    if (startBtn) startBtn.addEventListener("click", () => startForInvite(inviteInput && inviteInput.value));
+    if (inviteInput) inviteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
+    if (nextInviteBtn) nextInviteBtn.addEventListener("click", () => resetToInviteInput());
+    if (missionConfirmBtn) missionConfirmBtn.addEventListener('click', onConfirmMissions);
+    if (missionResetBtn) missionResetBtn.addEventListener('click', () => {
+      if (mission1El) { mission1El.selectedIndex = 0; }
+      if (mission2El) { mission2El.selectedIndex = 0; }
+      if (missionConsignesCard) { missionConsignesCard.classList.add('hidden'); if (missionConsignesList) missionConsignesList.innerHTML = ''; }
+      showToast(t('missionsReset'));
     });
-  });
-  slotClears.forEach((btn, i) => { if (btn) btn.addEventListener("click", () => clearSlot(i)); });
 
-  if (submitMissionsBtn) submitMissionsBtn.addEventListener('click', onSubmitMissions);
+    if (goAdminBtn) goAdminBtn.addEventListener("click", openAdmin);
+    if (goGalleryBtn) goGalleryBtn.addEventListener('click', openGallery);
+    if (adminExitBtn) adminExitBtn.addEventListener("click", closeAdmin);
+    if (galleryExitBtn) galleryExitBtn.addEventListener('click', closeGallery);
+    if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", renderAdminTable);
+    if (adminCopyBtn) adminCopyBtn.addEventListener("click", () => { copyAdminData(); renderAdminPhotos(); });
+    if (adminExportBtn) adminExportBtn.addEventListener("click", exportCSV);
+    if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
+    if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
+      try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
+      showToast(t('adminDisconnected'));
+      closeAdmin();
+    });
+    if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
+    if (adminResetAllBtn) adminResetAllBtn.addEventListener("click", () => {
+      if (confirm(t("deleteAllDataConfirmation"))) {
+        clearAllAssignments();
+        clearAllUploads();
+        renderAdminTable();
+        showToast(t("dataCleared"));
+      }
+    });
 
-  if (confirmationGalleryBtn) confirmationGalleryBtn.addEventListener('click', openGallery);
-  if (confirmationNewGuestBtn) confirmationNewGuestBtn.addEventListener('click', resetToInviteInput);
+    let frameUploadInput, frameSaveBtn, frameDeleteBtn, framePreviewImg;
+    
+    frameUploadInput = document.getElementById('frame-upload-input');
+    frameSaveBtn = document.getElementById('frame-save-btn');
+    frameDeleteBtn = document.getElementById('frame-delete-btn');
+    framePreviewImg = document.getElementById('frame-preview-img');
 
-  if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
-  if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
-  
+    if (frameUploadInput && frameSaveBtn && frameDeleteBtn && framePreviewImg) {
+      frameSaveBtn.addEventListener('click', () => {
+        const file = frameUploadInput.files[0];
+        if (!file) {
+          showToast(t("selectFile"), "danger");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.frame = e.target.result;
+          localStorage.setItem(FRAME_KEY, state.frame);
+          framePreviewImg.src = state.frame;
+          showToast(t("frameSaved"));
+        };
+        reader.readAsDataURL(file);
+      });
+
+      frameDeleteBtn.addEventListener('click', () => {
+        state.frame = null;
+        localStorage.removeItem(FRAME_KEY);
+        framePreviewImg.src = '';
+        showToast(t("frameDeleted"));
+      });
+
+      if (state.frame) {
+        framePreviewImg.src = state.frame;
+      }
+    }
+
+    if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', saveMissions);
+
+    if (accessModeSelect) {
+      accessModeSelect.value = state.accessMode;
+      accessModeSelect.addEventListener('change', () => {
+        state.accessMode = accessModeSelect.value; saveAccessMode();
+        showToast(t("accessModeUpdated"));
+      });
+    }
+
+    if (eventRequiredSelect && eventPassAdminInput && eventPassSaveBtn) {
+      eventRequiredSelect.value = state.eventAccess.required ? 'yes' : 'no';
+      eventPassAdminInput.value = state.eventAccess.password || '';
+      eventPassSaveBtn.addEventListener('click', () => {
+        const required = (eventRequiredSelect.value === 'yes');
+        const pwd = (eventPassAdminInput.value || '').trim();
+        if (required && !pwd) { 
+          showToast(t('eventPasswordRequired'), 'danger'); 
+          return; 
+        }
+        state.eventAccess.required = required;
+        state.eventAccess.password = pwd;
+        saveEventPass();
+        if (eventPassRow) eventPassRow.classList.toggle('hidden', !required);
+        if (!required && eventPassInput) {
+          eventPassInput.value = '';
+          eventPassInput.classList.remove('is-valid','is-invalid');
+        }
+        showToast(t('eventPasswordUpdated'));
+      });
+    }
+
+    const adminPhotoSort = document.getElementById('admin-photo-sort');
+    if (adminPhotoSort) adminPhotoSort.addEventListener('change', renderAdminPhotos);
+
+    if (adminResetSettingsBtn) adminResetSettingsBtn.addEventListener('click', () => {
+      if (!confirm(t('resetSettingsConfirmation'))) return;
+      state.challenges = [...DEFAULT_CHALLENGES]; saveChallenges();
+      state.accessMode = 'all'; saveAccessMode();
+      state.eventAccess = { required: false, password: '' }; saveEventPass();
+      if (adminChallengesTextarea) adminChallengesTextarea.value = state.challenges.join('\n');
+      if (accessModeSelect) accessModeSelect.value = 'all';
+      if (eventRequiredSelect) eventRequiredSelect.value = 'no';
+      if (eventPassAdminInput) eventPassAdminInput.value = '';
+      if (eventPassRow) eventPassRow.classList.add('hidden');
+      showToast(t('settingsReset'));
+    });
+
+    if (adminDeleteAllPhotosBtn) adminDeleteAllPhotosBtn.addEventListener('click', () => {
+      if (!confirm(t('deleteAllPhotosConfirmation'))) return;
+      uploads = {}; saveUploads();
+      renderAdminPhotos();
+      showToast(t('allPhotosDeleted'));
+    });
+
+    renderGallery();
+    
+    hydrateMissionSelectors();
+
+    if (accessBannerEl) {
+      accessBannerEl.classList.toggle('hidden', state.accessMode !== 'guests_only');
+    }
+
+    if (inviteNamesDatalist) {
+      inviteNamesDatalist.innerHTML = '';
+      if (state.accessMode === 'guests_only') {
+        Object.values(state.guests).forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g.display;
+          inviteNamesDatalist.appendChild(opt);
+        });
+      }
+    }
+
+    const inviteInputEl = document.getElementById('invite-name');
+    if (inviteInputEl) {
+      inviteInputEl.addEventListener('input', () => {
+        if (state.accessMode !== 'guests_only') { if(invitePassRow) invitePassRow.classList.add('hidden'); return; }
+        const key = resolveInviteKey(inviteInputEl.value||'');
+        const guest = state.guests[key];
+        const needPass = !!(guest && guest.password);
+        if (invitePassRow) invitePassRow.classList.toggle('hidden', !needPass);
+      });
+    }
+
+    const passHelpBtn = document.getElementById('invite-pass-help');
+    if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast(t('passwordHint')));
+    const passToggleBtn = document.getElementById('invite-pass-toggle');
+    if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
+      const isText = invitePassInput.type === 'text';
+      invitePassInput.type = isText ? 'password' : 'text';
+      passToggleBtn.setAttribute('aria-pressed', String(!isText));
+    });
+
+    if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
+    const eventHelpBtn = document.getElementById('event-pass-help');
+    if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast(t('eventPasswordHint')));
+    const eventToggleBtn = document.getElementById('event-pass-toggle');
+    if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
+      const isText = eventPassInput.type === 'text';
+      eventPassInput.type = isText ? 'password' : 'text';
+      eventToggleBtn.setAttribute('aria-pressed', String(!isText));
+    });
+
+    if (eventPassInput) eventPassInput.addEventListener('input', ()=> {
+      if (!(state.eventAccess && state.eventAccess.required)) return;
+      const ok = eventPassInput.value === (state.eventAccess.password||'');
+      eventPassInput.classList.toggle('is-valid', ok);
+      eventPassInput.classList.toggle('is-invalid', !ok && eventPassInput.value.length>0);
+    });
+    if (invitePassInput) invitePassInput.addEventListener('input', ()=> {
+      if (state.accessMode !== 'guests_only') return;
+      const nameEl = document.getElementById('invite-name');
+      const key = resolveInviteKey((nameEl && nameEl.value)||'');
+      const guest = state.guests[key];
+      if (!(guest && guest.password)) return;
+      const ok = invitePassInput.value === guest.password;
+      invitePassInput.classList.toggle('is-valid', ok);
+      invitePassInput.classList.toggle('is-invalid', !ok && invitePassInput.value.length>0);
+    });
+
+    slotInputs.forEach((input, i) => {
+      if (!input) return;
+      input.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) handleImageSelected(i, file);
+      });
+      const frameToggle = document.getElementById(`frame-toggle-input-${i}`);
+      if (frameToggle) {
+        frameToggle.addEventListener('change', () => updatePreview(i));
+      }
+    });
+
+    slotLiveBtns.forEach((btn, i) => {
+        if (!btn) return;
+        btn.addEventListener('click', () => slotInputs[i].click());
+    });
+
+    slotGalleryBtns.forEach((btn, i) => {
+        if (!btn) return;
+        btn.addEventListener('click', () => slotInputs[i].click());
+    });
+
+    slotZones.forEach((zone, i) => {
+      if (!zone) return;
+      zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
+      zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault(); zone.classList.remove("dragover");
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleImageSelected(i, file);
+      });
+    });
+    slotClears.forEach((btn, i) => { if (btn) btn.addEventListener("click", () => clearSlot(i)); });
+
+    if (submitMissionsBtn) submitMissionsBtn.addEventListener('click', onSubmitMissions);
+
+    if (confirmationGalleryBtn) confirmationGalleryBtn.addEventListener('click', openGallery);
+    if (confirmationNewGuestBtn) confirmationNewGuestBtn.addEventListener('click', resetToInviteInput);
+
+    if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
+    if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
+    
+  } catch (error) {
+    console.error("Failed to initialize the application:", error);
+    const appElement = document.querySelector('.app');
+    if (appElement) {
+        appElement.innerHTML = `<div class="card" style="text-align:center; padding: 2rem;"><h2>Oops! Une erreur est survenue.</h2><p>L'application n'a pas pu démarrer. Veuillez réessayer plus tard.</p><p><small>Détail de l'erreur : ${error.message}</small></p></div>`;
+    }
+  }
 }
 
 
@@ -1414,7 +1427,7 @@ async function clearSlot(i) {
   entry[i] = null;
   uploads[key] = entry;
   saveUploads(); // Still save to local storage for immediate UI updates
-  loadUploadsForInvite(key);
+  await loadUploadsForInvite(key);
 }
 
 async function handleImageSelected(slot, file) {
@@ -1451,10 +1464,10 @@ async function handleImageSelected(slot, file) {
       throw dbError;
     }
     
-    setUploadForInvite(key, slot, publicUrl); // We might need to adjust this function
+    setUploadForInvite(inviteKey, slot, publicUrl); // We might need to adjust this function
     await updatePreview(slot);
     showToast(`${t('photoSaved')} ${slot + 1}`);
-    loadUploadsForInvite(key);
+    await loadUploadsForInvite(inviteKey);
   } catch (e) {
     console.error(`[handleImageSelected] Error processing image:`, e);
     showToast(t("imageProcessingError"), "danger");

@@ -1298,9 +1298,9 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   }
 
   // Get public URL
-  const { data: { publicUrl } } = supabase_client.storage.from('photos').getPublicUrl(fileName);
+  const { data: { publicURL } } = supabase_client.storage.from('photos').getPublicUrl(fileName);
 
-  if (!publicUrl) {
+  if (!publicURL) {
     console.error('Error getting public URL');
     showToast("Impossible d'obtenir l'URL de l'image.", "danger");
     return;
@@ -1310,7 +1310,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   const { error: dbError } = await supabase_client.from('uploads').upsert({
     invite_key: inviteKey,
     slot,
-    url: publicUrl,
+    url: publicURL,
     challenge_label: challengeLabel,
     created_at: new Date(),
   }, { onConflict: 'invite_key, slot' });
@@ -1321,7 +1321,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   } else {
     // Manually update the local state for immediate UI feedback
     const current = uploads[inviteKey] || [null, null];
-    current[slot] = { data: publicUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
+    current[slot] = { data: publicURL, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
     uploads[inviteKey] = current;
   }
 }

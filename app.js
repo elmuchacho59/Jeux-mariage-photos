@@ -396,7 +396,7 @@ function setCurrentInvite(name) {
   renderAssigned(key);
 }
 
-function startForInvite(name) {
+async function startForInvite(name) {
   if (!name || !name.trim()) {
     showToast(t("enterGuestName"), "danger");
     return;
@@ -434,9 +434,20 @@ function startForInvite(name) {
     }
   }
   
+  // FIX: Add guest to Supabase to satisfy foreign key constraint
+  const trimmedName = name.trim();
+  const key = resolveInviteKey(trimmedName);
+  const { error } = await supabase.from('guests').upsert({ key: key, display: trimmedName });
+
+  if (error) {
+    console.error('Failed to create guest:', error);
+    showToast('Erreur lors de la création de l\'invité.', 'danger');
+    return;
+  }
+  
   goToStep('step-missions');
-  setCurrentInvite(name.trim());
-  showToast(`${t('welcome')} ${name.trim()} ! ${t('chooseMissions')}`);
+  setCurrentInvite(trimmedName);
+  showToast(`${t('welcome')} ${trimmedName} ! ${t('chooseMissions')}`);
 }
 
 function resetToInviteInput() {
@@ -1301,13 +1312,6 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
 
   // Get public URL
   const publicUrlResult = supabase.storage.from('photos').getPublicUrl(fileName);
-
-  // -- NOUVEAU DÉBOGAGE --
-  if (publicUrlResult.error) {
-    alert('ERREUR SUPABASE: ' + JSON.stringify(publicUrlResult.error));
-  }
-  // -- FIN DÉBOGAGE --
-
   const publicURL = publicUrlResult.data?.publicUrl;
 
 

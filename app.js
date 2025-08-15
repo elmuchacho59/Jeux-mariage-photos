@@ -1325,10 +1325,9 @@ function renderAdminPhotos() {
     }
   }
   adminPhotosPendingTbody.querySelectorAll('button[data-act="publish"]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
-      handleAdminActionOnUpload('publish', g, s);
-      renderAdminPhotos();
+      await handleAdminActionOnUpload('publish', g, s);
     });
   });
   [adminPhotosPendingTbody, adminPhotosPublishedTbody].forEach(tbody => {
@@ -1371,9 +1370,38 @@ async function loadUploads() {
   return uploads;
 }
 
-async function saveUploads() {
-  // This function will now be handled by more granular functions like setUploadForInvite
-  // and handleAdminActionOnUpload, so we can leave it empty or remove it.
+async function handleAdminActionOnUpload(action, inviteKey, slot) {
+  const entry = uploads[inviteKey] || [null, null];
+  const item = entry[slot];
+  if (!item) return;
+
+  const updates = {};
+  if (action === 'publish') {
+    item.approved = true;
+    item.published = true;
+    item.approvedAt = item.approvedAt || Date.now();
+    item.publishedAt = Date.now();
+    updates.approved = true;
+    updates.published = true;
+    updates.approved_at = new Date(item.approvedAt).toISOString();
+    updates.published_at = new Date(item.publishedAt).toISOString();
+  }
+  
+  const { error } = await supabase_client
+    .from('uploads')
+    .update(updates)
+    .eq('invite_key', inviteKey)
+    .eq('slot', slot);
+
+  if (error) {
+    console.error('Error updating upload status:', error);
+    showToast("Erreur lors de la mise à jour", "danger");
+    return;
+  }
+  
+  uploads[inviteKey] = entry;
+  renderAdminTable();
+  renderGallery();
 }
 
 function getUploadsForInvite(inviteKey) {
@@ -1504,18 +1532,36 @@ async function handleImageSelected(slot, file) {
   }
 }
 
-function handleAdminActionOnUpload(action, inviteKey, slot) {
+async function handleAdminActionOnUpload(action, inviteKey, slot) {
   const entry = uploads[inviteKey] || [null, null];
   const item = entry[slot];
   if (!item) return;
+
+  const updates = {};
   if (action === 'publish') {
     item.approved = true;
     item.published = true;
     item.approvedAt = item.approvedAt || Date.now();
     item.publishedAt = Date.now();
+    updates.approved = true;
+    updates.published = true;
+    updates.approved_at = new Date(item.approvedAt).toISOString();
+    updates.published_at = new Date(item.publishedAt).toISOString();
   }
+  
+  const { error } = await supabase_client
+    .from('uploads')
+    .update(updates)
+    .eq('invite_key', inviteKey)
+    .eq('slot', slot);
+
+  if (error) {
+    console.error('Error updating upload status:', error);
+    showToast("Erreur lors de la mise à jour", "danger");
+    return;
+  }
+  
   uploads[inviteKey] = entry;
-  saveUploads();
   renderAdminTable();
   renderGallery();
 }

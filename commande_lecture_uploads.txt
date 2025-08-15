@@ -1,0 +1,8 @@
+-- Commande pour autoriser tout le monde (utilisateurs anonymes inclus)
+-- à lire les informations des photos dans la table "uploads".
+-- Copiez et exécutez cette commande dans l'éditeur SQL de Supabase.
+
+CREATE POLICY "Enable read access for all users"
+ON public.uploads
+FOR SELECT
+USING (true);

@@ -1,9 +1,4 @@
-// --- SUPABASE CONNECT ---
-const { createClient } = supabase;
-const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
-// --- END SUPABASE CONNECT ---
+let supabaseClient;
 
 const i18n = {
   fr: {
@@ -223,7 +218,7 @@ const state = {
   guests: loadGuests(),
   accessMode: loadAccessMode(),
   eventAccess: loadEventPass(),
-  missions: {}, // Les missions seront chargées dans init()
+  missions: loadMissions(),
   frame: localStorage.getItem(FRAME_KEY) || null,
 };
 
@@ -288,35 +283,30 @@ function loadEventPass() {
 }
 function saveEventPass() { localStorage.setItem(EVENT_PASS_KEY, JSON.stringify(state.eventAccess)); }
 
-async function loadMissions() {
-  const { data, error } = await supabaseClient
-    .from('missions')
-    .select('mission_number, fr, es')
-    .order('mission_number');
-
-  if (error) {
-    console.error('Erreur lors du chargement des missions:', error);
-    // En cas d'erreur, on retourne un objet vide pour ne pas bloquer l'app.
-    const def = {};
-    for (let i = 1; i <= 10; i++) {
-      def[i] = { fr: '', es: '' };
+function loadMissions() {
+  try {
+    const raw = localStorage.getItem(MISSIONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        // New format: { 1: { fr: '...', es: '...' }, ... }
+        if (parsed['1'] && typeof parsed['1'] === 'object') {
+          return parsed;
+        }
+        // Old format: { 1: '...', ... } -> convert
+        const converted = {};
+        for (let i = 1; i <= 10; i++) {
+          converted[i] = { fr: parsed[i] || '', es: '' };
+        }
+        return converted;
+      }
     }
-    return def;
-  }
-
-  const missions = {};
-  for (const mission of data) {
-    missions[mission.mission_number] = { fr: mission.fr, es: mission.es };
-  }
-  
-  // S'assurer qu'il y a toujours 10 missions, même si la BDD est vide
+  } catch {}
+  const def = {};
   for (let i = 1; i <= 10; i++) {
-    if (!missions[i]) {
-      missions[i] = { fr: '', es: '' };
-    }
+    def[i] = { fr: '', es: '' };
   }
-  
-  return missions;
+  return def;
 }
 
 function saveMissions() {
@@ -826,9 +816,21 @@ function buildZipBlob(files) {
   return new Blob(chunks, { type: 'application/zip' });
 }
 
-async function init() {
-  // Charger les missions de manière asynchrone
-  state.missions = await loadMissions();
+function init() {
+  // --- SUPABASE CONNECT ---
+  try {
+    if (window.supabase) {
+      const { createClient } = supabase;
+      const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
+      const supabaseKey = 'sb_publishable_UcN31Rbc1bW-W0rsAY7XDQ_w-kYZ9S0';
+      supabaseClient = createClient(supabaseUrl, supabaseKey);
+    } else {
+      console.warn("Supabase script not loaded. Falling back to localStorage.");
+    }
+  } catch (error) {
+    console.error("Supabase initialisation failed:", error);
+  }
+  // --- END SUPABASE CONNECT ---
 
   const langFrBtn = document.getElementById('lang-fr');
   const langEsBtn = document.getElementById('lang-es');
@@ -1836,5 +1838,5 @@ function renderAdminStats() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init, { once: true });
 } else {
-  init();
+  queueMicrotask(init);
 }

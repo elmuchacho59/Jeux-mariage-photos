@@ -1338,6 +1338,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
     const current = uploads[inviteKey] || [null, null];
     current[slot] = { data: publicURL, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
     uploads[inviteKey] = current;
+    saveUploads(); // <-- CORRECTION : Sauvegarder l'état localement
   }
 }
 function clearAllUploads() { uploads = {}; saveUploads(); }

@@ -1,3 +1,5 @@
+import { supabase } from './supabase-client.js';
+
 const i18n = {
   fr: {
     unassigned: "Non assigné",
@@ -1284,7 +1286,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
   
   // Directly upload the blob
-  const { data, error: uploadError } = await supabase_client.storage
+  const { data, error: uploadError } = await supabase.storage
     .from('photos')
     .upload(fileName, imageBlob, {
       contentType: 'image/jpeg',
@@ -1298,7 +1300,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   }
 
   // Get public URL
-  const { data: { publicURL } } = supabase_client.storage.from('photos').getPublicUrl(fileName);
+  const { data: { publicURL } } = supabase.storage.from('photos').getPublicUrl(fileName);
 
   if (!publicURL) {
     console.error('Error getting public URL');
@@ -1307,7 +1309,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   }
 
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-  const { error: dbError } = await supabase_client.from('uploads').upsert({
+  const { error: dbError } = await supabase.from('uploads').upsert({
     invite_key: inviteKey,
     slot,
     url: publicURL,

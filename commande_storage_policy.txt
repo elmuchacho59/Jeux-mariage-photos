@@ -1,0 +1,8 @@
+-- Commande pour autoriser tout le monde (utilisateurs anonymes inclus)
+-- à lire, téléverser, mettre à jour et supprimer des fichiers dans votre bucket "photos".
+-- Copiez et exécutez cette commande dans l'éditeur SQL de Supabase.
+
+CREATE POLICY "Public Photos Access"
+ON storage.objects FOR ALL
+TO anon
+USING ( bucket_id = 'photos' );

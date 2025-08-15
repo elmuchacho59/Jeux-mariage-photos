@@ -1378,24 +1378,29 @@ function getUploadsForInvite(inviteKey) {
   if (!entry) return [null, null];
   return [entry[0] || null, entry[1] || null];
 }
-async function setUploadForInvite(inviteKey, slot, dataUrl) {
+async function setUploadForInvite(inviteKey, slot, imageBlob) {
   const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
-  const { data, error } = await supabase_client.storage
+  
+  // Directly upload the blob
+  const { data, error: uploadError } = await supabase_client.storage
     .from('photos')
-    .upload(fileName, dataUrlToBlob(dataUrl), {
+    .upload(fileName, imageBlob, {
       contentType: 'image/jpeg',
       upsert: true,
     });
 
-  if (error) {
-    console.error('Error uploading file:', error);
+  if (uploadError) {
+    console.error('Error uploading file:', uploadError);
+    showToast("Erreur lors du téléversement de l'image.", "danger");
     return;
   }
 
+  // Get public URL
   const { publicURL, error: urlError } = supabase_client.storage.from('photos').getPublicUrl(fileName);
 
   if (urlError) {
     console.error('Error getting public URL:', urlError);
+    showToast("Impossible d'obtenir l'URL de l'image.", "danger");
     return;
   }
 
@@ -1416,18 +1421,6 @@ async function setUploadForInvite(inviteKey, slot, dataUrl) {
     current[slot] = { data: publicURL, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
     uploads[inviteKey] = current;
   }
-}
-
-function dataUrlToBlob(dataUrl) {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while(n--){
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new Blob([u8arr], {type:mime});
 }
 async function clearAllUploads() {
   const { error } = await supabase_client.from('uploads').delete().neq('invite_key', 'dummy_value_to_delete_all'); // hack to delete all
@@ -1489,14 +1482,14 @@ function clearSlot(i) {
 async function handleImageSelected(slot, file) {
   showLoading();
   try {
-    const dataUrl = await compressImageToDataUrl(file); // Just compress, don't frame yet
+    const imageBlob = await compressImageToBlob(file);
     const key = state.currentInviteName;
     if (!key) {
       console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
       return;
     }
-    setUploadForInvite(key, slot, dataUrl);
-    await updatePreview(slot); // New function to handle preview with/without frame
+    await setUploadForInvite(key, slot, imageBlob);
+    await updatePreview(slot); // This will now fetch the new URL from the state
     showToast(`${t('photoSaved')} ${slot+1}`);
     loadUploadsForInvite(key);
   } catch (e) {
@@ -1802,7 +1795,7 @@ function renderRankingByLikes() {
   });
 }
 
-function compressImageToDataUrl(file) {
+function compressImageToBlob(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1812,7 +1805,6 @@ function compressImageToDataUrl(file) {
         const ctx = canvas.getContext('2d');
         const maxSize = 1600; // Max width/height
 
-        // 1. Resize the image while maintaining aspect ratio
         let { width, height } = img;
         if (width > height) {
           if (width > maxSize) {
@@ -1828,7 +1820,14 @@ function compressImageToDataUrl(file) {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Canvas to Blob conversion failed'));
+          }
+        }, 'image/jpeg', 0.9);
       };
       img.onerror = reject;
       img.src = e.target.result;

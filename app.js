@@ -1280,14 +1280,50 @@ function getUploadsForInvite(inviteKey) {
   if (!entry) return [null, null];
   return [entry[0] || null, entry[1] || null];
 }
-function setUploadForInvite(inviteKey, slot, dataUrl) {
-  console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
-  const current = uploads[inviteKey] || [null, null];
+async function setUploadForInvite(inviteKey, slot, imageBlob) {
+  const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
+  
+  // Directly upload the blob
+  const { data, error: uploadError } = await supabase_client.storage
+    .from('photos')
+    .upload(fileName, imageBlob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+
+  if (uploadError) {
+    console.error('Error uploading file:', uploadError);
+    showToast("Erreur lors du téléversement de l'image.", "danger");
+    return;
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase_client.storage.from('photos').getPublicUrl(fileName);
+
+  if (!publicUrl) {
+    console.error('Error getting public URL');
+    showToast("Impossible d'obtenir l'URL de l'image.", "danger");
+    return;
+  }
+
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-  current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
-  uploads[inviteKey] = current;
-  saveUploads();
-  console.log(`[setUploadForInvite] Current uploads object after setting:`, uploads);
+  const { error: dbError } = await supabase_client.from('uploads').upsert({
+    invite_key: inviteKey,
+    slot,
+    url: publicUrl,
+    challenge_label: challengeLabel,
+    created_at: new Date(),
+  }, { onConflict: 'invite_key, slot' });
+
+  if (dbError) {
+    console.error('Error saving upload metadata:', dbError);
+    showToast("Erreur lors de la sauvegarde des métadonnées.", "danger");
+  } else {
+    // Manually update the local state for immediate UI feedback
+    const current = uploads[inviteKey] || [null, null];
+    current[slot] = { data: publicUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
+    uploads[inviteKey] = current;
+  }
 }
 function clearAllUploads() { uploads = {}; saveUploads(); }
 
@@ -1341,14 +1377,14 @@ function clearSlot(i) {
 async function handleImageSelected(slot, file) {
   showLoading();
   try {
-    const dataUrl = await compressImageToDataUrl(file); // Just compress, don't frame yet
+    const imageBlob = await compressImageToBlob(file); 
     const key = state.currentInviteName;
     if (!key) {
       console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
       return;
     }
-    setUploadForInvite(key, slot, dataUrl);
-    await updatePreview(slot); // New function to handle preview with/without frame
+    await setUploadForInvite(key, slot, imageBlob);
+    await updatePreview(slot); 
     showToast(`${t('photoSaved')} ${slot+1}`);
     loadUploadsForInvite(key);
   } catch (e) {
@@ -1654,7 +1690,7 @@ function renderRankingByLikes() {
   });
 }
 
-function compressImageToDataUrl(file) {
+function compressImageToBlob(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1680,7 +1716,13 @@ function compressImageToDataUrl(file) {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Canvas to Blob conversion failed'));
+          }
+        }, 'image/jpeg', 0.9);
       };
       img.onerror = reject;
       img.src = e.target.result;

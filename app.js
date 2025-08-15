@@ -464,22 +464,37 @@ function setCurrentInvite(name) {
   const key = resolveInviteKey(display);
   state.currentInviteName = key;
   state.nameMap[key] = display;
-  saveNameMap();
+  // saveNameMap(); // This is no longer needed, guest is saved in startForInvite
   currentInviteEl.textContent = display;
   renderAssigned(key);
 }
 
-function startForInvite(name) {
+async function startForInvite(name) {
   if (!name || !name.trim()) {
     showToast(t("enterGuestName"), "danger");
     return;
   }
+
+  const displayName = name.trim();
+  const inviteKey = resolveInviteKey(displayName);
+
+  // First, ensure the guest exists in the database.
+  const { error: guestError } = await supabase_client
+    .from('guests')
+    .upsert({ key: inviteKey, display: displayName }, { onConflict: 'key' });
+
+  if (guestError) {
+    console.error('Error saving guest:', guestError);
+    showToast("Erreur lors de l'enregistrement de l'invité.", 'danger');
+    return;
+  }
+
+  // Then, perform other checks as before.
   if (state.accessMode === 'guests_only') {
-    const key = resolveInviteKey(name);
-    const guest = state.guests[key];
-    if (!guest) { 
+    const guest = state.guests[inviteKey];
+    if (!guest) {
       showToast(t("guestAccessOnly"), "danger");
-      return; 
+      return;
     }
     if (guest && guest.password) {
       const pin = (invitePassInput && invitePassInput.value) || '';
@@ -506,10 +521,10 @@ function startForInvite(name) {
       return;
     }
   }
-  
+
   goToStep('step-missions');
-  setCurrentInvite(name.trim());
-  showToast(`${t('welcome')} ${name.trim()} ! ${t('chooseMissions')}`);
+  setCurrentInvite(displayName);
+  showToast(`${t('welcome')} ${displayName}! ${t('chooseMissions')}`);
 }
 
 function resetToInviteInput() {
@@ -987,8 +1002,8 @@ async function init() {
   const startBtn = document.getElementById("start-btn");
   const inviteInput = document.getElementById("invite-name");
   const nextInviteBtn = document.getElementById("next-invite-btn");
-  if (startBtn) startBtn.addEventListener("click", () => startForInvite(inviteInput && inviteInput.value));
-  if (inviteInput) inviteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
+  if (startBtn) startBtn.addEventListener("click", async () => startForInvite(inviteInput && inviteInput.value));
+  if (inviteInput) inviteInput.addEventListener("keydown", async (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
   if (nextInviteBtn) nextInviteBtn.addEventListener("click", () => resetToInviteInput());
   if (missionConfirmBtn) missionConfirmBtn.addEventListener('click', onConfirmMissions);
   if (missionResetBtn) missionResetBtn.addEventListener('click', () => {

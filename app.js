@@ -1,3 +1,143 @@
+const i18n = {
+  fr: {
+    unassigned: "Non assigné",
+    mission: "Mission",
+    challenge: "Défi",
+    welcome: "Bienvenue",
+    chooseMissions: "Choisis tes missions ✨",
+    missionsSaved: "Missions enregistrées. Tu peux envoyer tes photos.",
+    selectTwoMissions: "Choisissez deux missions distinctes.",
+    submitConfirmation: "Merci pour ta participation !",
+    uploadBothPhotos: "Veuillez téléverser les deux photos avant d'envoyer.",
+    photoSaved: "Photo enregistrée",
+    imageProcessingError: "Impossible de traiter l'image.",
+    adminPinIncorrect: "Code incorrect",
+    adminDisconnected: "Déconnecté de l'espace Admin.",
+    dataCleared: "Données réinitialisées",
+    frameSaved: "Cadre enregistré !",
+    frameDeleted: "Cadre supprimé.",
+    selectFile: "Veuillez sélectionner un fichier.",
+    challengesUpdated: "Défis mis à jour",
+    atLeast3Missions: "Veuillez renseigner au moins 3 missions.",
+    guestNameRequired: "Nom requis",
+    missionsSavedSuccess: "Missions enregistrées",
+    accessModeUpdated: "Mode d'accès mis à jour",
+    eventPasswordUpdated: "Mot de passe évènement mis à jour",
+    eventPasswordRequired: "Veuillez saisir un mot de passe évènement.",
+    settingsReset: "Paramètres réinitialisés",
+    allPhotosDeleted: "Toutes les photos ont été supprimées",
+    missionsReset: "Missions réinitialisées",
+    passwordIncorrect: "Mot de passe incorrect",
+    guestAccessOnly: "Accès réservé aux invités. Nom introuvable.",
+    enterGuestName: "Veuillez saisir le nom de l'invité.",
+    passwordHint: "Indice mot de passe: ta date de naissance au format JJ/MM/AAAA (ex: 01/01/1990).",
+    eventPasswordHint: "Demandez le mot de passe de l'évènement aux organisateurs.",
+    cameraApiUnavailable: "L'API de la caméra n'est pas disponible sur ce navigateur.",
+    cameraError: "Impossible d'ouvrir la caméra. Avez-vous donné l'autorisation?",
+    captureImpossible: "Capture impossible",
+    copiedToClipboard: "Copié dans le presse-papiers",
+    noPublishedPhotos: "Aucune photo publiée.",
+    deleteGuestConfirmation: "Supprimer cet invité ?",
+    editGuestNamePrompt: "Nom de l'invité",
+    editGuestPasswordPrompt: "Mot de passe (laisser vide pour aucun)",
+    deleteAllDataConfirmation: "Tout effacer (assignations, noms, photos) sur cet appareil ?",
+    resetSettingsConfirmation: "Réinitialiser les paramètres par défaut (défis, accès invités, mot de passe évènement) ?",
+    deleteAllPhotosConfirmation: "Supprimer TOUTES les photos ? Cette action est irréversible.",
+    deletePhotoConfirmation: "Supprimer cette photo ?",
+    enterMissionInstruction: "Saisir la consigne de la mission",
+    missions: "Missions",
+    mission1: "Mission 1",
+    mission2: "Mission 2",
+    challenge1: "Défi 1",
+    challenge2: "Défi 2",
+    pendingStatus: "En attente",
+    publishedStatus: "Publiée",
+    validateAndPublish: "Valider et Publier",
+    delete: "Supprimer",
+    edit: "Éditer",
+    validatedStatus: "✅ 2/2 validés",
+    inProgressStatus: "⏳ en cours",
+    likeLabel: "J'aime",
+    cancel: "Annuler",
+    takePhoto: "Prendre la photo",
+    cameraErrorPrompt: "Erreur caméra:",
+    galleryEmpty: "L'album est encore vide !",
+    galleryEmptySubtitle: "Chères invitées, à vos appareils photo ! La galerie attend vos chefs-d'œuvre. 📸",
+    missionHeader: "Mission",
+    challengeCompleted: "Bravo ! Défi réalisé en",
+  },
+  es: {
+    unassigned: "Sin asignar",
+    mission: "Misión",
+    challenge: "Reto",
+    welcome: "¡Bienvenido(a)!",
+    chooseMissions: "Elige tus misiones ✨",
+    missionsSaved: "Misiones guardadas. Ya puedes subir tus fotos.",
+    selectTwoMissions: "Elige dos misiones distintas.",
+    submitConfirmation: "¡Gracias por participar!",
+    uploadBothPhotos: "Por favor, sube las dos fotos antes de enviar.",
+    photoSaved: "Foto guardada",
+    imageProcessingError: "No se pudo procesar la imagen.",
+    adminPinIncorrect: "Código incorrecto",
+    adminDisconnected: "Desconectado del área de Admin.",
+    dataCleared: "Datos restablecidos",
+    frameSaved: "¡Marco guardado!",
+    frameDeleted: "Marco eliminado.",
+    selectFile: "Por favor, selecciona un archivo.",
+    challengesUpdated: "Retos actualizados",
+    atLeast3Missions: "Por favor, introduce al menos 3 misiones.",
+    guestNameRequired: "Nombre requerido",
+    missionsSavedSuccess: "Misiones guardadas",
+    accessModeUpdated: "Modo de acceso actualizado",
+    eventPasswordUpdated: "Contraseña del evento actualizada",
+    eventPasswordRequired: "Por favor, introduce la contraseña del evento.",
+    settingsReset: "Configuración restablecida",
+    allPhotosDeleted: "Todas las fotos han sido eliminadas",
+    missionsReset: "Misiones reiniciadas",
+    passwordIncorrect: "Contraseña incorrecta",
+    guestAccessOnly: "Acceso solo para invitados. Nombre no encontrado.",
+    enterGuestName: "Por favor, introduce el nombre del invitado.",
+    passwordHint: "Pista de la contraseña: tu fecha de nacimiento en formato DD/MM/AAAA (ej: 01/01/1990).",
+    eventPasswordHint: "Pide la contraseña del evento a los organizadores.",
+    cameraApiUnavailable: "La API de la cámara no está disponible en este navegador.",
+    cameraError: "No se puede abrir la cámara. ¿Has dado permiso?",
+    captureImpossible: "Captura imposible",
+    copiedToClipboard: "Copiado al portapapeles",
+    noPublishedPhotos: "No hay fotos publicadas.",
+    deleteGuestConfirmation: "¿Eliminar a este invitado?",
+    editGuestNamePrompt: "Nombre del invitado",
+    editGuestPasswordPrompt: "Contraseña (dejar en blanco para ninguna)",
+    deleteAllDataConfirmation: "¿Borrar todos los datos (asignaciones, nombres, fotos) de este dispositivo?",
+    resetSettingsConfirmation: "¿Restablecer la configuración predeterminada (retos, acceso de invitados, contraseña del evento)?",
+    deleteAllPhotosConfirmation: "¿Eliminar TODAS las fotos? Esta acción es irreversible.",
+    deletePhotoConfirmation: "¿Eliminar esta foto?",
+    enterMissionInstruction: "Introduce la consigna de la misión",
+    missions: "Misiones",
+    mission1: "Misión 1",
+    mission2: "Misión 2",
+    challenge1: "Reto 1",
+    challenge2: "Reto 2",
+    pendingStatus: "Pendiente",
+    publishedStatus: "Publicada",
+    validateAndPublish: "Validar y Publicar",
+    delete: "Eliminar",
+    edit: "Editar",
+    validatedStatus: "✅ 2/2 validados",
+    inProgressStatus: "⏳ en curso",
+    likeLabel: "Me gusta",
+    cancel: "Cancelar",
+    takePhoto: "Tomar la foto",
+    cameraErrorPrompt: "Error de cámara:",
+    galleryEmpty: "¡El álbum todavía está vacío!",
+    galleryEmptySubtitle: "¡Queridos invitados, a sus cámaras! La galería espera sus obras maestras. 📸",
+    missionHeader: "Misión",
+    challengeCompleted: "¡Bravo! Reto completado en",
+  }
+};
+
+const lang = document.documentElement.lang === 'es' ? 'es' : 'fr';
+const t = (key) => i18n[lang][key] || i18n.fr[key];
+
 /*
   Défi Photo – Mariage
   Application statique qui assigne 2 défis photo distincts par invité via une roue de la fortune.
@@ -5,7 +145,7 @@
   - Fonctionne hors ligne
 */
 
-const DEFAULT_CHALLENGES = [
+const DEFAULT_CHALLENGES_FR = [
   "Un selfie avec les mariés",
   "Une photo d'un fou rire",
   "La plus belle danse",
@@ -27,6 +167,31 @@ const DEFAULT_CHALLENGES = [
   "Une blague immortalisée",
   "Le bouquet sous un autre angle"
 ];
+
+const DEFAULT_CHALLENGES_ES = [
+    "Un selfie con los novios",
+    "Una foto de una carcajada",
+    "El baile más bonito",
+    "Un beso robado",
+    "Un brindis",
+    "Los zapatos más estilosos",
+    "Un abrazo grupal",
+    "Un detalle de la decoración",
+    "La sonrisa más bonita",
+    "Un momento inesperado",
+    "Una foto en blanco y negro",
+    "Un plano general del salón",
+    "Una foto con un desconocido",
+    "Los anillos en primer plano",
+    "Las manos de los invitados",
+    "Una mirada cómplice",
+    "Un niño divirtiéndose",
+    "Un plato que da hambre",
+    "Una broma inmortalizada",
+    "El ramo desde otro ángulo"
+];
+
+const DEFAULT_CHALLENGES = lang === 'es' ? DEFAULT_CHALLENGES_ES : DEFAULT_CHALLENGES_FR;
 
 const STORAGE_KEY = "defis_mariage_assignations_v1"; // preserve existing data
 const ADMIN_PASS_KEY = "defis_mariage_admin_enabled"; // simple toggle for admin access if needed later
@@ -53,7 +218,6 @@ const state = {
   eventAccess: loadEventPass(),
   missions: loadMissions(),
   frame: localStorage.getItem(FRAME_KEY) || null,
-  // toastTimer: null, // Buggy, removed for a better implementation
 };
 
 let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabPublished, adminPhotosPendingTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl, loadingOverlayEl;
@@ -122,22 +286,36 @@ function loadMissions() {
     const raw = localStorage.getItem(MISSIONS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const converted = {};
-      for (let i = 1; i <= 10; i++) {
-        if (parsed[i] && typeof parsed[i] === 'object' && parsed[i].c1) {
-          converted[i] = parsed[i].c1 + (parsed[i].c2 ? ' / ' + parsed[i].c2 : '');
-        } else if (typeof parsed[i] === 'string') {
-          converted[i] = parsed[i];
-        } else {
-          converted[i] = '';
+      if (typeof parsed === 'object' && parsed !== null) {
+        // New format: { 1: { fr: '...', es: '...' }, ... }
+        if (parsed['1'] && typeof parsed['1'] === 'object') {
+          return parsed;
         }
+        // Old format: { 1: '...', ... } -> convert
+        const converted = {};
+        for (let i = 1; i <= 10; i++) {
+          converted[i] = { fr: parsed[i] || '', es: '' };
+        }
+        return converted;
       }
-      return converted;
     }
   } catch {}
-  const def = {}; for (let i=1;i<=10;i++) def[i] = ''; return def;
+  const def = {};
+  for (let i = 1; i <= 10; i++) {
+    def[i] = { fr: '', es: '' };
+  }
+  return def;
 }
-function saveMissions() { localStorage.setItem(MISSIONS_KEY, JSON.stringify(state.missions)); }
+
+function saveMissions() {
+  for (let i = 1; i <= 10; i++) {
+    const fr = document.getElementById(`mission-c-${i}-fr`)?.value || '';
+    const es = document.getElementById(`mission-c-${i}-es`)?.value || '';
+    state.missions[i] = { fr, es };
+  }
+  localStorage.setItem(MISSIONS_KEY, JSON.stringify(state.missions));
+  showToast(t('missionsSavedSuccess'));
+}
 
 
 function loadAccessMode() {
@@ -187,11 +365,11 @@ function renderAssigned(inviteName) {
   missionSelectionPanel.classList.toggle('hidden', completed);
 
   if (completed) {
-    const [c1 = "Mission 1", c2 = "Mission 2"] = assigned;
+    const [c1 = t("mission1"), c2 = t("mission2")] = assigned;
     const lbl0 = document.getElementById("slot0-label");
     const lbl1 = document.getElementById("slot1-label");
-    if (lbl0) lbl0.textContent = c1 || "Défi 1";
-    if (lbl1) lbl1.textContent = c2 || "Défi 2";
+    if (lbl0) lbl0.textContent = c1 || t("challenge1");
+    if (lbl1) lbl1.textContent = c2 || t("challenge2");
 
     if (missionConsignesList) {
         missionConsignesList.innerHTML = "";
@@ -218,20 +396,20 @@ function setCurrentInvite(name) {
 
 function startForInvite(name) {
   if (!name || !name.trim()) {
-    showToast("Veuillez saisir le nom de l'invité.", "danger");
+    showToast(t("enterGuestName"), "danger");
     return;
   }
   if (state.accessMode === 'guests_only') {
     const key = resolveInviteKey(name);
     const guest = state.guests[key];
     if (!guest) { 
-      showToast("Accès réservé aux invités. Nom introuvable.", "danger");
+      showToast(t("guestAccessOnly"), "danger");
       return; 
     }
     if (guest && guest.password) {
       const pin = (invitePassInput && invitePassInput.value) || '';
       if (pin !== guest.password) {
-        showToast("Mot de passe incorrect", "danger");
+        showToast(t("passwordIncorrect"), "danger");
         if (invitePassInput) {
           invitePassInput.focus();
           invitePassInput.classList.add('is-invalid');
@@ -244,7 +422,7 @@ function startForInvite(name) {
   if (state.eventAccess && state.eventAccess.required) {
     const pin = (eventPassInput && eventPassInput.value) || '';
     if (pin !== state.eventAccess.password) {
-      showToast('Mot de passe évènement incorrect', "danger");
+      showToast(t("passwordIncorrect"), "danger");
       if (eventPassInput) {
         eventPassInput.focus();
         eventPassInput.classList.add('is-invalid');
@@ -256,7 +434,7 @@ function startForInvite(name) {
   
   goToStep('step-missions');
   setCurrentInvite(name.trim());
-  showToast(`Bienvenue ${name.trim()} ! Choisis tes missions ✨`);
+  showToast(`${t('welcome')} ${name.trim()} ! ${t('chooseMissions')}`);
 }
 
 function resetToInviteInput() {
@@ -280,20 +458,20 @@ function onConfirmMissions() {
   const num1 = parseInt(mission1El.value, 10);
   const num2 = parseInt(mission2El.value, 10);
   if (Number.isNaN(num1) || Number.isNaN(num2) || num1 === num2) { 
-    showToast('Choisissez deux missions distinctes.', 'danger'); 
+    showToast(t('selectTwoMissions'), 'danger'); 
     return; 
   }
-  const m1 = state.missions[num1] || '';
-  const m2 = state.missions[num2] || '';
+  const m1 = state.missions[num1] ? state.missions[num1][lang] : '';
+  const m2 = state.missions[num2] ? state.missions[num2][lang] : '';
   const sel = [
-    `Mission ${num1}: ${m1}`,
-    `Mission ${num2}: ${m2}`
+    `${t('mission')} ${num1}: ${m1}`,
+    `${t('mission')} ${num2}: ${m2}`
   ];
   const already = new Set(getAssignedForInvite(invite));
   sel.forEach(c => { if (!already.has(c)) addAssignment(invite, c); });
   
   renderAssigned(invite);
-  showToast('Missions enregistrées. Tu peux envoyer tes photos.');
+  showToast(t('missionsSaved'));
   launchConfetti();
 }
 
@@ -303,7 +481,7 @@ async function onSubmitMissions() {
 
     const [upload1, upload2] = getUploadsForInvite(inviteKey);
     if (!upload1 || !upload1.data || !upload2 || !upload2.data) {
-        showToast("Veuillez téléverser les deux photos avant d'envoyer.", "danger");
+        showToast(t("uploadBothPhotos"), "danger");
         return;
     }
 
@@ -317,7 +495,7 @@ async function onSubmitMissions() {
         hideLoading();
     }
 
-    showToast("Merci pour ta participation !");
+    showToast(t("submitConfirmation"));
     goToStep('step-confirmation');
 }
 
@@ -326,8 +504,10 @@ function renderMissionsTable() {
   missionsTbody.innerHTML = '';
   for (let i=1;i<=10;i++) {
     const tr = document.createElement('tr');
-    const m = state.missions[i] || '';
-    tr.innerHTML = `<td>${i}</td><td><input id="mission-c-${i}" class="input" value="${escapeHtml(m)}" placeholder="Saisir la consigne de la mission ${i}"/></td>`;
+    const m = state.missions[i] || { fr: '', es: '' };
+    tr.innerHTML = `<td>${i}</td>
+      <td><input id="mission-c-${i}-fr" class="input" value="${escapeHtml(m.fr)}" placeholder="${t('enterMissionInstruction')} ${i} (FR)"/></td>
+      <td><input id="mission-c-${i}-es" class="input" value="${escapeHtml(m.es)}" placeholder="${t('enterMissionInstruction')} ${i} (ES)"/></td>`;
     missionsTbody.appendChild(tr);
   }
 }
@@ -352,10 +532,10 @@ function resolveInviteKey(name) {
   return String(name).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9 àâäçéèêëîïôöùûü-]/gi, '');
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
   if (!toastContainer) return;
   const div = document.createElement("div");
-  div.className = "toast";
+  div.className = `toast ${type}`;
   div.textContent = message;
   toastContainer.appendChild(div);
   setTimeout(() => {
@@ -398,9 +578,9 @@ function openAdmin() {
   try {
     const ok = sessionStorage.getItem(ADMIN_PIN_KEY) === 'ok';
     if (!ok) {
-      const pin = prompt('Entrez le code PIN Admin');
+      const pin = prompt(t('enterAdminPin'));
       if (pin !== ADMIN_PIN_VALUE) { 
-        showToast('Code incorrect', 'danger'); 
+        showToast(t('adminPinIncorrect'), 'danger'); 
         return; 
       }
       sessionStorage.setItem(ADMIN_PIN_KEY, 'ok');
@@ -487,7 +667,7 @@ function copyAdminData() {
     rows.push([displayName, arr[0]||"", arr[1]||""]);
   }
   const text = rows.map(r => r.join('\t')).join('\n');
-  navigator.clipboard.writeText(text).then(() => showToast("Copié dans le presse-papiers"));
+  navigator.clipboard.writeText(text).then(() => showToast(t("copiedToClipboard")));
 }
 
 function exportCSV() {
@@ -524,7 +704,7 @@ async function exportZipGallery() {
       }
     });
   }
-  if (files.length === 0) { showToast('Aucune photo publiée.', 'danger'); return; }
+  if (files.length === 0) { showToast(t('noPublishedPhotos'), 'danger'); return; }
 
   const blobs = await Promise.all(files.map(f => dataUrlToUint8Array(f.dataUrl).then(bytes => ({ name: f.name, bytes }))));
   const zipBlob = buildZipBlob(blobs);
@@ -635,6 +815,20 @@ function buildZipBlob(files) {
 }
 
 function init() {
+  const langFrBtn = document.getElementById('lang-fr');
+  const langEsBtn = document.getElementById('lang-es');
+
+  if (langFrBtn) {
+    langFrBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  if (langEsBtn) {
+    langEsBtn.addEventListener('click', () => {
+      window.location.href = 'index.es.html';
+    });
+  }
   guestFlowSection = $("#guest-flow-section");
   stepWelcome = $("#step-welcome");
   stepMissions = $("#step-missions");
@@ -723,7 +917,7 @@ function init() {
     if (mission1El) { mission1El.selectedIndex = 0; }
     if (mission2El) { mission2El.selectedIndex = 0; }
     if (missionConsignesCard) { missionConsignesCard.classList.add('hidden'); if (missionConsignesList) missionConsignesList.innerHTML = ''; }
-    showToast('Missions réinitialisées');
+    showToast(t('missionsReset'));
   });
 
   if (goAdminBtn) goAdminBtn.addEventListener("click", openAdmin);
@@ -736,16 +930,16 @@ function init() {
   if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
   if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
     try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
-    showToast('Déconnecté de l\'espace Admin.');
+    showToast(t('adminDisconnected'));
     closeAdmin();
   });
   if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
   if (adminResetAllBtn) adminResetAllBtn.addEventListener("click", () => {
-    if (confirm("Tout effacer (assignations, noms, photos) sur cet appareil ?")) {
+    if (confirm(t("deleteAllDataConfirmation"))) {
       clearAllAssignments();
       clearAllUploads();
       renderAdminTable();
-      showToast("Données réinitialisées");
+      showToast(t("dataCleared"));
     }
   });
 
@@ -760,7 +954,7 @@ function init() {
     frameSaveBtn.addEventListener('click', () => {
       const file = frameUploadInput.files[0];
       if (!file) {
-        showToast("Veuillez sélectionner un fichier.", "danger");
+        showToast(t("selectFile"), "danger");
         return;
       }
       const reader = new FileReader();
@@ -768,7 +962,7 @@ function init() {
         state.frame = e.target.result;
         localStorage.setItem(FRAME_KEY, state.frame);
         framePreviewImg.src = state.frame;
-        showToast("Cadre enregistré !");
+        showToast(t("frameSaved"));
       };
       reader.readAsDataURL(file);
     });
@@ -777,7 +971,7 @@ function init() {
       state.frame = null;
       localStorage.removeItem(FRAME_KEY);
       framePreviewImg.src = '';
-      showToast("Cadre supprimé.");
+      showToast(t("frameDeleted"));
     });
 
     if (state.frame) {
@@ -785,49 +979,13 @@ function init() {
     }
   }
 
-  if (adminChallengesSaveBtn) adminChallengesSaveBtn.addEventListener("click", () => {
-    const lines = (adminChallengesTextarea.value || "").split(/\r?\n/)
-      .map(s => s.trim()).filter(Boolean);
-    if (lines.length < 3) {
-      showToast("Veuillez renseigner au moins 3 missions.", "danger");
-      return;
-    }
-    state.challenges = lines;
-    saveChallenges();
-    showToast("Défis mis à jour");
-  });
-
-  if (adminGuestAddBtn) adminGuestAddBtn.addEventListener('click', () => {
-    const name = (adminGuestName.value||'').trim();
-    const pass = (adminGuestPass.value||'').trim();
-    if (!name) { 
-      showToast("Nom requis", "danger");
-      return; 
-    }
-    const key = resolveInviteKey(name);
-    state.guests[key] = { display: name, password: pass || null };
-    saveGuests();
-    renderGuests();
-    adminGuestName.value = ''; adminGuestPass.value = '';
-  });
-
-  if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', () => {
-    for (let i=1;i<=10;i++) {
-      const consigne = document.getElementById(`mission-c-${i}`)?.value || '';
-      state.missions[i] = consigne;
-    }
-    saveMissions();
-    hydrateMissionSelectors();
-    showToast('Missions enregistrées');
-  });
-
-  
+  if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', saveMissions);
 
   if (accessModeSelect) {
     accessModeSelect.value = state.accessMode;
     accessModeSelect.addEventListener('change', () => {
       state.accessMode = accessModeSelect.value; saveAccessMode();
-      showToast("Mode d'accès mis à jour");
+      showToast(t("accessModeUpdated"));
     });
   }
 
@@ -838,7 +996,7 @@ function init() {
       const required = (eventRequiredSelect.value === 'yes');
       const pwd = (eventPassAdminInput.value || '').trim();
       if (required && !pwd) { 
-        showToast('Veuillez saisir un mot de passe évènement.', 'danger'); 
+        showToast(t('eventPasswordRequired'), 'danger'); 
         return; 
       }
       state.eventAccess.required = required;
@@ -849,7 +1007,7 @@ function init() {
         eventPassInput.value = '';
         eventPassInput.classList.remove('is-valid','is-invalid');
       }
-      showToast('Mot de passe évènement mis à jour');
+      showToast(t('eventPasswordUpdated'));
     });
   }
 
@@ -857,7 +1015,7 @@ function init() {
   if (adminPhotoSort) adminPhotoSort.addEventListener('change', renderAdminPhotos);
 
   if (adminResetSettingsBtn) adminResetSettingsBtn.addEventListener('click', () => {
-    if (!confirm('Réinitialiser les paramètres par défaut (défis, accès invités, mot de passe évènement) ?')) return;
+    if (!confirm(t('resetSettingsConfirmation'))) return;
     state.challenges = [...DEFAULT_CHALLENGES]; saveChallenges();
     state.accessMode = 'all'; saveAccessMode();
     state.eventAccess = { required: false, password: '' }; saveEventPass();
@@ -866,14 +1024,14 @@ function init() {
     if (eventRequiredSelect) eventRequiredSelect.value = 'no';
     if (eventPassAdminInput) eventPassAdminInput.value = '';
     if (eventPassRow) eventPassRow.classList.add('hidden');
-    showToast('Paramètres réinitialisés');
+    showToast(t('settingsReset'));
   });
 
   if (adminDeleteAllPhotosBtn) adminDeleteAllPhotosBtn.addEventListener('click', () => {
-    if (!confirm('Supprimer TOUTES les photos ? Cette action est irréversible.')) return;
+    if (!confirm(t('deleteAllPhotosConfirmation'))) return;
     uploads = {}; saveUploads();
     renderAdminPhotos();
-    showToast('Toutes les photos ont été supprimées');
+    showToast(t('allPhotosDeleted'));
   });
 
   renderGallery();
@@ -907,7 +1065,7 @@ function init() {
   }
 
   const passHelpBtn = document.getElementById('invite-pass-help');
-  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast('Indice mot de passe: ta date de naissance au format JJ/MM/AAAA (ex: 01/01/1990).'));
+  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast(t('passwordHint')));
   const passToggleBtn = document.getElementById('invite-pass-toggle');
   if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
     const isText = invitePassInput.type === 'text';
@@ -917,7 +1075,7 @@ function init() {
 
   if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
   const eventHelpBtn = document.getElementById('event-pass-help');
-  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast("Demandez le mot de passe de l'évènement aux organisateurs."));
+  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast(t('eventPasswordHint')));
   const eventToggleBtn = document.getElementById('event-pass-toggle');
   if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
     const isText = eventPassInput.type === 'text';
@@ -983,56 +1141,39 @@ function init() {
 
   if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
   if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
-  setupTheme();
+  
 }
 
-function setupTheme() {
-    const themeToggle = document.getElementById('theme-toggle');
-    const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-
-    if (storedTheme) {
-        document.documentElement.setAttribute('data-theme', storedTheme);
-        if (themeToggle) themeToggle.checked = storedTheme === 'dark';
-    }
-
-    if (themeToggle) {
-        themeToggle.addEventListener('change', (e) => {
-            const newTheme = e.target.checked ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
-    }
-}
 
 function renderGuests() {
   if (!adminGuestsTbody) return;
   adminGuestsTbody.innerHTML = '';
   const entries = Object.entries(state.guests).sort(([a],[b]) => a.localeCompare(b));
   entries.forEach(([key, g]) => {
-    const status = computeDurationMs(key) != null ? '✅ 2/2 validés' : '⏳ en cours';
+    const status = computeDurationMs(key) != null ? t('validatedStatus') : t('inProgressStatus');
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${escapeHtml(g.display||key)}</td>
       <td>${g.password ? '••••' : '—'}</td>
       <td>${status}</td>
       <td>
-        <button class="btn" data-g="${key}" data-act="edit">Éditer</button>
-        <button class="btn danger" data-g="${key}" data-act="del">Supprimer</button>
+        <button class="btn" data-g="${key}" data-act="edit">${t('edit')}</button>
+        <button class="btn danger" data-g="${key}" data-act="del">${t('delete')}</button>
       </td>`;
     adminGuestsTbody.appendChild(tr);
   });
   adminGuestsTbody.querySelectorAll('button[data-act="del"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const k = btn.getAttribute('data-g');
-      if (confirm('Supprimer cet invité ?')) { delete state.guests[k]; saveGuests(); renderGuests(); }
+      if (confirm(t('deleteGuestConfirmation'))) { delete state.guests[k]; saveGuests(); renderGuests(); }
     });
   });
   adminGuestsTbody.querySelectorAll('button[data-act="edit"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const k = btn.getAttribute('data-g');
       const g = state.guests[k];
-      const newName = prompt('Nom de l\'invité', g.display||'');
+      const newName = prompt(t('editGuestNamePrompt'), g.display||'');
       if (!newName) return;
-      const newPass = prompt('Mot de passe (laisser vide pour aucun)', g.password||'');
+      const newPass = prompt(t('editGuestPasswordPrompt'), g.password||'');
       const newKey = resolveInviteKey(newName);
       delete state.guests[k];
       state.guests[newKey] = { display: newName, password: newPass||null };
@@ -1083,10 +1224,10 @@ function renderAdminPhotos() {
     const tr = document.createElement('tr');
     const img = `<img src="${up.data}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
     if (!up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">En attente</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">Valider et Publier</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">${t('pendingStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">${t('validateAndPublish')}</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
       adminPhotosPendingTbody.appendChild(tr);
     } else if (up.published) {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">Publiée</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.publishedAt)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">Supprimer</button></td>`;
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">${t('publishedStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.publishedAt)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
       adminPhotosPublishedTbody.appendChild(tr);
     }
   }
@@ -1101,11 +1242,11 @@ function renderAdminPhotos() {
     tbody.querySelectorAll('button[data-act="delete"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
-        if (!confirm('Supprimer cette photo ?')) return;
+        if (!confirm(t('deletePhotoConfirmation'))) return;
         const arr = uploads[g] || [null,null];
         arr[s] = null; uploads[g] = arr; saveUploads();
         renderAdminPhotos();
-        showToast('Photo supprimée');
+        showToast(t('photoDeleted'));
       });
     });
   });
@@ -1142,7 +1283,7 @@ function getUploadsForInvite(inviteKey) {
 function setUploadForInvite(inviteKey, slot, dataUrl) {
   console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
   const current = uploads[inviteKey] || [null, null];
-  const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? 'Mission 1' : 'Mission 2');
+  const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
   current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
   uploads[inviteKey] = current;
   saveUploads();
@@ -1208,10 +1349,11 @@ async function handleImageSelected(slot, file) {
     }
     setUploadForInvite(key, slot, dataUrl);
     await updatePreview(slot); // New function to handle preview with/without frame
-    showToast(`Photo ${slot+1} enregistrée`);
+    showToast(`${t('photoSaved')} ${slot+1}`);
+    loadUploadsForInvite(key);
   } catch (e) {
     console.error(`[handleImageSelected] Error processing image:`, e);
-    showToast("Impossible de traiter l'image.", "danger");
+    showToast(t("imageProcessingError"), "danger");
   } finally {
     hideLoading();
   }
@@ -1248,8 +1390,8 @@ function renderGallery() {
     placeholder.style.padding = '32px';
     placeholder.style.marginBottom = '12px';
     placeholder.innerHTML = `
-      <h3>L'album est encore vide !</h3>
-      <p class="subtitle">Chères invitées, à vos appareils photo ! La galerie attend vos chefs-d'œuvre. 📸</p>
+      <h3>${t('galleryEmpty')}</h3>
+      <p class="subtitle">${t('galleryEmptySubtitle')}</p>
     `;
     columnsWrap.parentNode.insertBefore(placeholder, columnsWrap);
   }
@@ -1260,7 +1402,7 @@ function renderGallery() {
     const display = state.nameMap[inviteKey] || inviteKey;
     (arr || []).forEach((up) => {
       if (up && up.data && up.published) {
-        const label = up.challengeLabel || 'Mission';
+        const label = up.challengeLabel || t('mission');
         if (!byChallenge.has(label)) byChallenge.set(label, []);
         byChallenge.get(label).push({ img: up.data, label, invite: display, inviteKey });
       }
@@ -1280,7 +1422,7 @@ function renderGallery() {
   labels.forEach((label, idx) => {
     const col = document.createElement('div');
     col.className = 'gallery-column';
-    col.innerHTML = `<h4>Mission ${idx+1} – ${escapeHtml(label)}</h4>`;
+    col.innerHTML = `<h4>${t('missionHeader')} ${idx+1} – ${escapeHtml(label)}</h4>`;
     const grid = document.createElement('div');
     grid.className = 'gallery-grid';
     byChallenge.get(label).forEach(({ img, invite, inviteKey }) => {
@@ -1296,11 +1438,11 @@ function renderGallery() {
         const end = Math.max(...approvedTimes);
         const ms = Math.max(0, end - start);
         const mins = Math.floor(ms/60000); const secs = Math.floor((ms%60000)/1000);
-        timeInfo = `Bravo ! Défi réalisé en ${mins}m${secs.toString().padStart(2,'0')}s 🎯`;
+        timeInfo = `${t('challengeCompleted')} ${mins}m${secs.toString().padStart(2,'0')}s 🎯`;
       }
       div.innerHTML = `<img src="${img}" alt="${escapeHtml(label)}"/>
         <div class="badge">${escapeHtml(invite)}</div>
-        <button class="like" type="button" aria-label="J'aime"><span>❤️</span><span class="like-count">${likes}</span></button>
+        <button class="like" type="button" aria-label="${t('likeLabel')}"><span>❤️</span><span class="like-count">${likes}</span></button>
         <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.55);color:white;font-size:12px;padding:4px 6px;border-radius:8px;">${escapeHtml(label)}${timeInfo? ' – '+timeInfo: ''}</div>`;
       div.addEventListener('click', (e) => {
         if (e.target.closest('.like')) return;
@@ -1573,7 +1715,7 @@ function applyFrame(originalImage) {
 
 async function openLiveCapture(slot) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast("L'API de la caméra n'est pas disponible sur ce navigateur.", "danger");
+    showToast(t("cameraApiUnavailable"), "danger");
     return;
   }
 
@@ -1592,8 +1734,8 @@ async function openLiveCapture(slot) {
         <div style="background:#000;padding:8px;border-radius:12px;display:grid;gap:8px;max-width:92vw;">
           <video id="live-video" autoplay playsinline style="width:min(92vw,640px);height:auto;border-radius:8px;"></video>
           <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button id="live-cancel" class="btn">Annuler</button>
-            <button id="live-shoot" class="btn primary">Prendre la photo</button>
+            <button id="live-cancel" class="btn">${t('cancel')}</button>
+            <button id="live-shoot" class="btn primary">${t('takePhoto')}</button>
           </div>
         </div>
       </div>`;
@@ -1634,15 +1776,15 @@ async function openLiveCapture(slot) {
         await handleImageSelected(slot, file);
 
       } catch (e) {
-        showToast("Capture impossible", "danger");
+        showToast(t("captureImpossible"), "danger");
       } finally {
         cleanup();
         hideLoading();
       }
     });
   } catch (err) {
-      console.error("Erreur caméra:", err);
-      showToast("Impossible d'ouvrir la caméra. Avez-vous donné l'autorisation?", "danger");
+      console.error(t('cameraErrorPrompt'), err);
+      showToast(t("cameraError"), "danger");
       if (stream) { stream.getTracks().forEach(t=>t.stop()); }
       if (overlay.parentNode) { overlay.remove(); }
   }

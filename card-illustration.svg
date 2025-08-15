@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="150" viewBox="0 0 250 150" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    .card-bg { fill: #f9fafb; stroke: #d1d5db; }
+    .card-text { fill: #374151; font-family: sans-serif; font-size: 16px; text-anchor: middle; }
+    @media (prefers-color-scheme: dark) {
+      .card-bg { fill: #374151; stroke: #6b7280; }
+      .card-text { fill: #e5e7eb; }
+    }
+  </style>
+  <g transform="rotate(-10 125 75)">
+    <rect class="card-bg" x="55" y="30" width="140" height="90" rx="10"/>
+    <text x="125" y="70" class="card-text">Mission #1</text>
+    <text x="125" y="95" class="card-text">Mission #2</text>
+  </g>
+  <g transform="rotate(5 125 75)">
+    <rect class="card-bg" x="55" y="30" width="140" height="90" rx="10"/>
+    <text x="125" y="80" class="card-text">Hello, BINGO!</text>
+  </g>
+</svg>

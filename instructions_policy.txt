@@ -1,0 +1,10 @@
+Copiez et collez la commande SQL ci-dessous dans l'éditeur SQL de votre projet Supabase pour autoriser la lecture publique des images dans votre bucket "photos".
+
+--------------------------------------------------
+
+CREATE POLICY "Public Photos Access"
+ON storage.objects FOR ALL
+TO anon
+USING ( bucket_id = 'photos' );
+
+--------------------------------------------------

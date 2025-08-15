@@ -1,0 +1,14 @@
+Copiez et collez les commandes SQL ci-dessous dans l'éditeur SQL de votre projet Supabase. Exécutez-les l'une après l'autre pour réinitialiser la politique d'accès à votre bucket de stockage.
+
+--------------------------------------------------
+
+-- Étape 1 : Supprimer l'ancienne politique
+DROP POLICY "Public Photos Access" ON storage.objects;
+
+-- Étape 2 : Recréer la politique correctement
+CREATE POLICY "Public Photos Access"
+ON storage.objects FOR ALL
+TO anon
+USING ( bucket_id = 'photos' );
+
+--------------------------------------------------

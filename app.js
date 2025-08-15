@@ -1300,10 +1300,17 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   }
 
   // Get public URL
-  const { data: { publicURL } } = supabase.storage.from('photos').getPublicUrl(fileName);
+  const publicUrlResult = supabase.storage.from('photos').getPublicUrl(fileName);
+
+  // -- DEBUGGING --
+  console.log('DEBUG: Full result from getPublicUrl:', publicUrlResult);
+  // -- END DEBUGGING --
+
+  const publicURL = publicUrlResult.data?.publicUrl;
+
 
   if (!publicURL) {
-    console.error('Error getting public URL');
+    console.error('Error getting public URL. Full result was:', publicUrlResult);
     showToast("Impossible d'obtenir l'URL de l'image.", "danger");
     return;
   }

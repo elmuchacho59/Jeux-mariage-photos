@@ -1415,6 +1415,7 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
 
   if (dbError) {
     console.error('Error saving upload metadata:', dbError);
+    showToast("Erreur lors de la sauvegarde des métadonnées.", "danger");
   } else {
     // Manually update the local state for immediate UI feedback
     const current = uploads[inviteKey] || [null, null];

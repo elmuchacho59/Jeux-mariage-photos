@@ -1,10 +1,9 @@
+// --- SUPABASE CONNECT ---
 const { createClient } = supabase;
-
 const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-let supabaseClient;
+// --- END SUPABASE CONNECT ---
 
 const i18n = {
   fr: {
@@ -224,7 +223,7 @@ const state = {
   guests: loadGuests(),
   accessMode: loadAccessMode(),
   eventAccess: loadEventPass(),
-  missions: {}, // Will be loaded in init()
+  missions: {}, // Les missions seront chargées dans init()
   frame: localStorage.getItem(FRAME_KEY) || null,
 };
 
@@ -296,49 +295,38 @@ async function loadMissions() {
     .order('mission_number');
 
   if (error) {
-    console.error('Error loading missions:', error);
-    // Fallback to local storage or default if Supabase fails
-    try {
-      const raw = localStorage.getItem(MISSIONS_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {
-      // Ignore parsing error
+    console.error('Erreur lors du chargement des missions:', error);
+    // En cas d'erreur, on retourne un objet vide pour ne pas bloquer l'app.
+    const def = {};
+    for (let i = 1; i <= 10; i++) {
+      def[i] = { fr: '', es: '' };
     }
+    return def;
   }
 
-  if (data) {
-    const missions = {};
-    for (const mission of data) {
-      missions[mission.mission_number] = { fr: mission.fr, es: mission.es };
-    }
-    return missions;
+  const missions = {};
+  for (const mission of data) {
+    missions[mission.mission_number] = { fr: mission.fr, es: mission.es };
   }
-
-  const def = {};
+  
+  // S'assurer qu'il y a toujours 10 missions, même si la BDD est vide
   for (let i = 1; i <= 10; i++) {
-    def[i] = { fr: '', es: '' };
+    if (!missions[i]) {
+      missions[i] = { fr: '', es: '' };
+    }
   }
-  return def;
+  
+  return missions;
 }
 
-async function saveMissions() {
-  const missionsToSave = [];
+function saveMissions() {
   for (let i = 1; i <= 10; i++) {
     const fr = document.getElementById(`mission-c-${i}-fr`)?.value || '';
     const es = document.getElementById(`mission-c-${i}-es`)?.value || '';
-    missionsToSave.push({ mission_number: i, fr, es });
+    state.missions[i] = { fr, es };
   }
-
-  const { error } = await supabaseClient
-    .from('missions')
-    .upsert(missionsToSave, { onConflict: 'mission_number' });
-
-  if (error) {
-    console.error('Error saving missions:', error);
-    showToast('Erreur lors de la sauvegarde des missions', 'danger');
-  } else {
-    showToast(t('missionsSavedSuccess'));
-  }
+  localStorage.setItem(MISSIONS_KEY, JSON.stringify(state.missions));
+  showToast(t('missionsSavedSuccess'));
 }
 
 
@@ -418,7 +406,7 @@ function setCurrentInvite(name) {
   renderAssigned(key);
 }
 
-async function startForInvite(name) {
+function startForInvite(name) {
   if (!name || !name.trim()) {
     showToast(t("enterGuestName"), "danger");
     return;
@@ -458,7 +446,6 @@ async function startForInvite(name) {
   
   goToStep('step-missions');
   setCurrentInvite(name.trim());
-  await loadUploadsForInvite(resolveInviteKey(name.trim())); // Load uploads for the new guest
   showToast(`${t('welcome')} ${name.trim()} ! ${t('chooseMissions')}`);
 }
 
@@ -510,7 +497,16 @@ async function onSubmitMissions() {
         return;
     }
 
-    // Photos are already uploaded, just confirm
+    showLoading();
+    try {
+        for (let i = 0; i < 2; i++) {
+            const previewSrc = slotPreviews[i].src;
+            setUploadForInvite(inviteKey, i, previewSrc);
+        }
+    } finally {
+        hideLoading();
+    }
+
     showToast(t("submitConfirmation"));
     goToStep('step-confirmation');
 }
@@ -830,366 +826,337 @@ function buildZipBlob(files) {
   return new Blob(chunks, { type: 'application/zip' });
 }
 
-function updateLangButtons() {
-    const langFrBtn = document.getElementById('lang-fr');
-    const langEsBtn = document.getElementById('lang-es');
-    if (!langFrBtn || !langEsBtn) return;
-  
-    const currentLang = document.documentElement.lang || 'fr';
-    langFrBtn.classList.toggle('active', currentLang === 'fr');
-    langEsBtn.classList.toggle('active', currentLang === 'es');
-  }
-
 async function init() {
-  try {
-    if (typeof supabase === 'undefined' || !supabase) {
-      throw new Error("Le client Supabase n'est pas disponible. L'application ne peut pas démarrer.");
-    }
+  // Charger les missions de manière asynchrone
+  state.missions = await loadMissions();
 
-    const { createClient } = supabase;
-    const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw';
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
-    
-    state.missions = await loadMissions(); // Load missions first
+  const langFrBtn = document.getElementById('lang-fr');
+  const langEsBtn = document.getElementById('lang-es');
+
+  if (langFrBtn) {
+    langFrBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  if (langEsBtn) {
+    langEsBtn.addEventListener('click', () => {
+      window.location.href = 'index.es.html';
+    });
+  }
+  guestFlowSection = $("#guest-flow-section");
+  stepWelcome = $("#step-welcome");
+  stepMissions = $("#step-missions");
+  stepConfirmation = $("#step-confirmation");
+  missionSelectionPanel = $("#mission-selection-panel");
+  missionDisplayPanel = $("#mission-display-panel");
+  confirmationGalleryBtn = $("#confirmation-gallery-btn");
+  confirmationNewGuestBtn = $("#confirmation-new-guest-btn");
+  currentInviteEl = $("#current-invite");
+  assignedCountEl = $("#assigned-count");
+  assignedItemsEl = $("#assigned-items");
+  challengeListEl = $("#challenge-list");
+  mission1El = document.getElementById('mission1');
+  mission2El = document.getElementById('mission2');
+  missionConfirmBtn = document.getElementById('mission-confirm-btn');
+  missionResetBtn = document.getElementById('mission-reset-btn');
+  missionsTbody = document.getElementById('missions-tbody');
+  missionsSaveBtn = document.getElementById('missions-save');
+  missionConsignesCard = document.getElementById('mission-consignes');
+  missionConsignesList = document.getElementById('mission-consignes-list');
+  accessBannerEl = document.getElementById('access-banner');
+  invitePassInput = document.getElementById('invite-pass');
+  invitePassRow = document.getElementById('invite-pass-row');
+  inviteNamesDatalist = document.getElementById('invite-names');
+  eventPassRow = document.getElementById('event-pass-row');
+  eventPassInput = document.getElementById('event-pass');
+  spinBtn = $("#spin-btn");
+  lockedNoteEl = $("#locked-note");
+  progressBarEl = $("#progress-bar");
+  toastContainer = $("#toast-container");
+  confettiCanvas = $("#confetti-canvas");
+  goAdminBtn = $("#go-admin-btn");
+  goGalleryBtn = $("#go-gallery-btn");
+  adminSection = $("#admin-section");
+  adminExitBtn = $("#admin-exit");
+  gallerySection = document.getElementById('gallery-section');
+  galleryExitBtn = document.getElementById('gallery-exit');
+  lightboxEl = document.getElementById('lightbox');
+  lightboxBackdrop = document.getElementById('lightbox-backdrop');
+  lightboxImg = document.getElementById('lightbox-img');
+  lightboxCaption = document.getElementById('lightbox-caption');
+  lightboxDownload = document.getElementById('lightbox-download');
+  lightboxClose = document.getElementById('lightbox-close');
+  adminRefreshBtn = $("#admin-refresh");
+  adminCopyBtn = $("#admin-copy");
+  adminExportBtn = $("#admin-export");
+  adminExportZipBtn = $("#admin-export-zip");
+  adminLogoutBtn = $("#admin-logout");
+  adminSearchInput = $("#admin-search");
+  adminTbody = $("#admin-tbody");
+  adminResetAllBtn = $("#admin-reset-all");
   
-    const langFrBtn = document.getElementById('lang-fr');
-    const langEsBtn = document.getElementById('lang-es');
+  adminGuestName = $("#admin-guest-name");
+  adminGuestPass = $("#admin-guest-pass");
+  adminGuestAddBtn = $("#admin-guest-add");
+  adminGuestsTbody = $("#admin-guests-tbody");
+  accessModeSelect = $("#access-mode");
+  adminTabPending = $("#admin-tab-pending");
+  adminTabPublished = $("#admin-tab-published");
+  adminPhotosPendingTbody = $("#admin-photos-pending-tbody");
+  adminPhotosPublishedTbody = $("#admin-photos-published-tbody");
+  eventRequiredSelect = document.getElementById('event-required');
+  eventPassAdminInput = document.getElementById('event-pass-admin');
+  eventPassSaveBtn = document.getElementById('event-pass-save');
+  adminResetSettingsBtn = document.getElementById('admin-reset-settings');
+  adminDeleteAllPhotosBtn = document.getElementById('admin-delete-all-photos');
+  uploadSection = $("#upload-section");
+  slotInputs = [$("#slot0-input"), $("#slot1-input")];
+  slotPreviews = [$("#slot0-preview"), $("#slot1-preview")];
+  slotZones = [$("#slot0-zone"), $("#slot1-zone")];
+  slotClears = [$("#slot0-clear"), $("#slot1-clear")];
+  slotLiveBtns = [document.getElementById('slot0-live-btn'), document.getElementById('slot1-live-btn')];
+  slotGalleryBtns = [document.getElementById('slot0-gallery-btn'), document.getElementById('slot1-gallery-btn')];
+  submitMissionsBtn = document.getElementById('submit-missions-btn');
+  submissionMsgEl = document.getElementById('submission-msg');
+  loadingOverlayEl = document.getElementById('loading-overlay');
 
-    if (langFrBtn) {
-      langFrBtn.addEventListener('click', () => {
-        const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
-        window.location.href = path + 'index.html';
-      });
+  const startBtn = document.getElementById("start-btn");
+  const inviteInput = document.getElementById("invite-name");
+  const nextInviteBtn = document.getElementById("next-invite-btn");
+  if (startBtn) startBtn.addEventListener("click", () => startForInvite(inviteInput && inviteInput.value));
+  if (inviteInput) inviteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
+  if (nextInviteBtn) nextInviteBtn.addEventListener("click", () => resetToInviteInput());
+  if (missionConfirmBtn) missionConfirmBtn.addEventListener('click', onConfirmMissions);
+  if (missionResetBtn) missionResetBtn.addEventListener('click', () => {
+    if (mission1El) { mission1El.selectedIndex = 0; }
+    if (mission2El) { mission2El.selectedIndex = 0; }
+    if (missionConsignesCard) { missionConsignesCard.classList.add('hidden'); if (missionConsignesList) missionConsignesList.innerHTML = ''; }
+    showToast(t('missionsReset'));
+  });
+
+  if (goAdminBtn) goAdminBtn.addEventListener("click", openAdmin);
+  if (goGalleryBtn) goGalleryBtn.addEventListener('click', openGallery);
+  if (adminExitBtn) adminExitBtn.addEventListener("click", closeAdmin);
+  if (galleryExitBtn) galleryExitBtn.addEventListener('click', closeGallery);
+  if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", renderAdminTable);
+  if (adminCopyBtn) adminCopyBtn.addEventListener("click", () => { copyAdminData(); renderAdminPhotos(); });
+  if (adminExportBtn) adminExportBtn.addEventListener("click", exportCSV);
+  if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
+  if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
+    try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
+    showToast(t('adminDisconnected'));
+    closeAdmin();
+  });
+  if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
+  if (adminResetAllBtn) adminResetAllBtn.addEventListener("click", () => {
+    if (confirm(t("deleteAllDataConfirmation"))) {
+      clearAllAssignments();
+      clearAllUploads();
+      renderAdminTable();
+      showToast(t("dataCleared"));
     }
+  });
 
-    if (langEsBtn) {
-      langEsBtn.addEventListener('click', () => {
-        const path = window.location.pathname.replace(/index(\.es)?\.html$/, '');
-        window.location.href = path + 'index.es.html';
-      });
-    }
-    updateLangButtons();
-    guestFlowSection = $("#guest-flow-section");
-    stepWelcome = $("#step-welcome");
-    stepMissions = $("#step-missions");
-    stepConfirmation = $("#step-confirmation");
-    missionSelectionPanel = $("#mission-selection-panel");
-    missionDisplayPanel = $("#mission-display-panel");
-    confirmationGalleryBtn = $("#confirmation-gallery-btn");
-    confirmationNewGuestBtn = $("#confirmation-new-guest-btn");
-    currentInviteEl = $("#current-invite");
-    assignedCountEl = $("#assigned-count");
-    assignedItemsEl = $("#assigned-items");
-    challengeListEl = $("#challenge-list");
-    mission1El = document.getElementById('mission1');
-    mission2El = document.getElementById('mission2');
-    missionConfirmBtn = document.getElementById('mission-confirm-btn');
-    missionResetBtn = document.getElementById('mission-reset-btn');
-    missionsTbody = document.getElementById('missions-tbody');
-    missionsSaveBtn = document.getElementById('missions-save');
-    missionConsignesCard = document.getElementById('mission-consignes');
-    missionConsignesList = document.getElementById('mission-consignes-list');
-    accessBannerEl = document.getElementById('access-banner');
-    invitePassInput = document.getElementById('invite-pass');
-    invitePassRow = document.getElementById('invite-pass-row');
-    inviteNamesDatalist = document.getElementById('invite-names');
-    eventPassRow = document.getElementById('event-pass-row');
-    eventPassInput = document.getElementById('event-pass');
-    spinBtn = $("#spin-btn");
-    lockedNoteEl = $("#locked-note");
-    progressBarEl = $("#progress-bar");
-    toastContainer = $("#toast-container");
-    confettiCanvas = $("#confetti-canvas");
-    goAdminBtn = $("#go-admin-btn");
-    goGalleryBtn = $("#go-gallery-btn");
-    adminSection = $("#admin-section");
-    adminExitBtn = $("#admin-exit");
-    gallerySection = document.getElementById('gallery-section');
-    galleryExitBtn = document.getElementById('gallery-exit');
-    lightboxEl = document.getElementById('lightbox');
-    lightboxBackdrop = document.getElementById('lightbox-backdrop');
-    lightboxImg = document.getElementById('lightbox-img');
-    lightboxCaption = document.getElementById('lightbox-caption');
-    lightboxDownload = document.getElementById('lightbox-download');
-    lightboxClose = document.getElementById('lightbox-close');
-    adminRefreshBtn = $("#admin-refresh");
-    adminCopyBtn = $("#admin-copy");
-    adminExportBtn = $("#admin-export");
-    adminExportZipBtn = $("#admin-export-zip");
-    adminLogoutBtn = $("#admin-logout");
-    adminSearchInput = $("#admin-search");
-    adminTbody = $("#admin-tbody");
-    adminResetAllBtn = $("#admin-reset-all");
-    
-    adminGuestName = $("#admin-guest-name");
-    adminGuestPass = $("#admin-guest-pass");
-    adminGuestAddBtn = $("#admin-guest-add");
-    adminGuestsTbody = $("#admin-guests-tbody");
-    accessModeSelect = $("#access-mode");
-    adminTabPending = $("#admin-tab-pending");
-    adminTabPublished = $("#admin-tab-published");
-    adminPhotosPendingTbody = $("#admin-photos-pending-tbody");
-    adminPhotosPublishedTbody = $("#admin-photos-published-tbody");
-    eventRequiredSelect = document.getElementById('event-required');
-    eventPassAdminInput = document.getElementById('event-pass-admin');
-    eventPassSaveBtn = document.getElementById('event-pass-save');
-    adminResetSettingsBtn = document.getElementById('admin-reset-settings');
-    adminDeleteAllPhotosBtn = document.getElementById('admin-delete-all-photos');
-    uploadSection = $("#upload-section");
-    slotInputs = [$("#slot0-input"), $("#slot1-input")];
-    slotPreviews = [$("#slot0-preview"), $("#slot1-preview")];
-    slotZones = [$("#slot0-zone"), $("#slot1-zone")];
-    slotClears = [$("#slot0-clear"), $("#slot1-clear")];
-    slotLiveBtns = [document.getElementById('slot0-live-btn'), document.getElementById('slot1-live-btn')];
-    slotGalleryBtns = [document.getElementById('slot0-gallery-btn'), document.getElementById('slot1-gallery-btn')];
-    submitMissionsBtn = document.getElementById('submit-missions-btn');
-    submissionMsgEl = document.getElementById('submission-msg');
-    loadingOverlayEl = document.getElementById('loading-overlay');
+  let frameUploadInput, frameSaveBtn, frameDeleteBtn, framePreviewImg;
+  
+  frameUploadInput = document.getElementById('frame-upload-input');
+  frameSaveBtn = document.getElementById('frame-save-btn');
+  frameDeleteBtn = document.getElementById('frame-delete-btn');
+  framePreviewImg = document.getElementById('frame-preview-img');
 
-    const startBtn = document.getElementById("start-btn");
-    const inviteInput = document.getElementById("invite-name");
-    const nextInviteBtn = document.getElementById("next-invite-btn");
-    if (startBtn) startBtn.addEventListener("click", () => startForInvite(inviteInput && inviteInput.value));
-    if (inviteInput) inviteInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startForInvite(inviteInput.value); });
-    if (nextInviteBtn) nextInviteBtn.addEventListener("click", () => resetToInviteInput());
-    if (missionConfirmBtn) missionConfirmBtn.addEventListener('click', onConfirmMissions);
-    if (missionResetBtn) missionResetBtn.addEventListener('click', () => {
-      if (mission1El) { mission1El.selectedIndex = 0; }
-      if (mission2El) { mission2El.selectedIndex = 0; }
-      if (missionConsignesCard) { missionConsignesCard.classList.add('hidden'); if (missionConsignesList) missionConsignesList.innerHTML = ''; }
-      showToast(t('missionsReset'));
-    });
-
-    if (goAdminBtn) goAdminBtn.addEventListener("click", openAdmin);
-    if (goGalleryBtn) goGalleryBtn.addEventListener('click', openGallery);
-    if (adminExitBtn) adminExitBtn.addEventListener("click", closeAdmin);
-    if (galleryExitBtn) galleryExitBtn.addEventListener('click', closeGallery);
-    if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", renderAdminTable);
-    if (adminCopyBtn) adminCopyBtn.addEventListener("click", () => { copyAdminData(); renderAdminPhotos(); });
-    if (adminExportBtn) adminExportBtn.addEventListener("click", exportCSV);
-    if (adminExportZipBtn) adminExportZipBtn.addEventListener("click", exportZipGallery);
-    if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
-      try { sessionStorage.removeItem(ADMIN_PIN_KEY); } catch {}
-      showToast(t('adminDisconnected'));
-      closeAdmin();
-    });
-    if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminTable);
-    if (adminResetAllBtn) adminResetAllBtn.addEventListener("click", () => {
-      if (confirm(t("deleteAllDataConfirmation"))) {
-        clearAllAssignments();
-        clearAllUploads();
-        renderAdminTable();
-        showToast(t("dataCleared"));
+  if (frameUploadInput && frameSaveBtn && frameDeleteBtn && framePreviewImg) {
+    frameSaveBtn.addEventListener('click', () => {
+      const file = frameUploadInput.files[0];
+      if (!file) {
+        showToast(t("selectFile"), "danger");
+        return;
       }
-    });
-
-    let frameUploadInput, frameSaveBtn, frameDeleteBtn, framePreviewImg;
-    
-    frameUploadInput = document.getElementById('frame-upload-input');
-    frameSaveBtn = document.getElementById('frame-save-btn');
-    frameDeleteBtn = document.getElementById('frame-delete-btn');
-    framePreviewImg = document.getElementById('frame-preview-img');
-
-    if (frameUploadInput && frameSaveBtn && frameDeleteBtn && framePreviewImg) {
-      frameSaveBtn.addEventListener('click', () => {
-        const file = frameUploadInput.files[0];
-        if (!file) {
-          showToast(t("selectFile"), "danger");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.frame = e.target.result;
-          localStorage.setItem(FRAME_KEY, state.frame);
-          framePreviewImg.src = state.frame;
-          showToast(t("frameSaved"));
-        };
-        reader.readAsDataURL(file);
-      });
-
-      frameDeleteBtn.addEventListener('click', () => {
-        state.frame = null;
-        localStorage.removeItem(FRAME_KEY);
-        framePreviewImg.src = '';
-        showToast(t("frameDeleted"));
-      });
-
-      if (state.frame) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.frame = e.target.result;
+        localStorage.setItem(FRAME_KEY, state.frame);
         framePreviewImg.src = state.frame;
-      }
-    }
-
-    if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', saveMissions);
-
-    if (accessModeSelect) {
-      accessModeSelect.value = state.accessMode;
-      accessModeSelect.addEventListener('change', () => {
-        state.accessMode = accessModeSelect.value; saveAccessMode();
-        showToast(t("accessModeUpdated"));
-      });
-    }
-
-    if (eventRequiredSelect && eventPassAdminInput && eventPassSaveBtn) {
-      eventRequiredSelect.value = state.eventAccess.required ? 'yes' : 'no';
-      eventPassAdminInput.value = state.eventAccess.password || '';
-      eventPassSaveBtn.addEventListener('click', () => {
-        const required = (eventRequiredSelect.value === 'yes');
-        const pwd = (eventPassAdminInput.value || '').trim();
-        if (required && !pwd) { 
-          showToast(t('eventPasswordRequired'), 'danger'); 
-          return; 
-        }
-        state.eventAccess.required = required;
-        state.eventAccess.password = pwd;
-        saveEventPass();
-        if (eventPassRow) eventPassRow.classList.toggle('hidden', !required);
-        if (!required && eventPassInput) {
-          eventPassInput.value = '';
-          eventPassInput.classList.remove('is-valid','is-invalid');
-        }
-        showToast(t('eventPasswordUpdated'));
-      });
-    }
-
-    const adminPhotoSort = document.getElementById('admin-photo-sort');
-    if (adminPhotoSort) adminPhotoSort.addEventListener('change', renderAdminPhotos);
-
-    if (adminResetSettingsBtn) adminResetSettingsBtn.addEventListener('click', () => {
-      if (!confirm(t('resetSettingsConfirmation'))) return;
-      state.challenges = [...DEFAULT_CHALLENGES]; saveChallenges();
-      state.accessMode = 'all'; saveAccessMode();
-      state.eventAccess = { required: false, password: '' }; saveEventPass();
-      if (adminChallengesTextarea) adminChallengesTextarea.value = state.challenges.join('\n');
-      if (accessModeSelect) accessModeSelect.value = 'all';
-      if (eventRequiredSelect) eventRequiredSelect.value = 'no';
-      if (eventPassAdminInput) eventPassAdminInput.value = '';
-      if (eventPassRow) eventPassRow.classList.add('hidden');
-      showToast(t('settingsReset'));
+        showToast(t("frameSaved"));
+      };
+      reader.readAsDataURL(file);
     });
 
-    if (adminDeleteAllPhotosBtn) adminDeleteAllPhotosBtn.addEventListener('click', () => {
-      if (!confirm(t('deleteAllPhotosConfirmation'))) return;
-      uploads = {}; saveUploads();
-      renderAdminPhotos();
-      showToast(t('allPhotosDeleted'));
+    frameDeleteBtn.addEventListener('click', () => {
+      state.frame = null;
+      localStorage.removeItem(FRAME_KEY);
+      framePreviewImg.src = '';
+      showToast(t("frameDeleted"));
     });
 
-    renderGallery();
-    
-    hydrateMissionSelectors();
-
-    if (accessBannerEl) {
-      accessBannerEl.classList.toggle('hidden', state.accessMode !== 'guests_only');
-    }
-
-    if (inviteNamesDatalist) {
-      inviteNamesDatalist.innerHTML = '';
-      if (state.accessMode === 'guests_only') {
-        Object.values(state.guests).forEach(g => {
-          const opt = document.createElement('option');
-          opt.value = g.display;
-          inviteNamesDatalist.appendChild(opt);
-        });
-      }
-    }
-
-    const inviteInputEl = document.getElementById('invite-name');
-    if (inviteInputEl) {
-      inviteInputEl.addEventListener('input', () => {
-        if (state.accessMode !== 'guests_only') { if(invitePassRow) invitePassRow.classList.add('hidden'); return; }
-        const key = resolveInviteKey(inviteInputEl.value||'');
-        const guest = state.guests[key];
-        const needPass = !!(guest && guest.password);
-        if (invitePassRow) invitePassRow.classList.toggle('hidden', !needPass);
-      });
-    }
-
-    const passHelpBtn = document.getElementById('invite-pass-help');
-    if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast(t('passwordHint')));
-    const passToggleBtn = document.getElementById('invite-pass-toggle');
-    if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
-      const isText = invitePassInput.type === 'text';
-      invitePassInput.type = isText ? 'password' : 'text';
-      passToggleBtn.setAttribute('aria-pressed', String(!isText));
-    });
-
-    if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
-    const eventHelpBtn = document.getElementById('event-pass-help');
-    if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast(t('eventPasswordHint')));
-    const eventToggleBtn = document.getElementById('event-pass-toggle');
-    if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
-      const isText = eventPassInput.type === 'text';
-      eventPassInput.type = isText ? 'password' : 'text';
-      eventToggleBtn.setAttribute('aria-pressed', String(!isText));
-    });
-
-    if (eventPassInput) eventPassInput.addEventListener('input', ()=> {
-      if (!(state.eventAccess && state.eventAccess.required)) return;
-      const ok = eventPassInput.value === (state.eventAccess.password||'');
-      eventPassInput.classList.toggle('is-valid', ok);
-      eventPassInput.classList.toggle('is-invalid', !ok && eventPassInput.value.length>0);
-    });
-    if (invitePassInput) invitePassInput.addEventListener('input', ()=> {
-      if (state.accessMode !== 'guests_only') return;
-      const nameEl = document.getElementById('invite-name');
-      const key = resolveInviteKey((nameEl && nameEl.value)||'');
-      const guest = state.guests[key];
-      if (!(guest && guest.password)) return;
-      const ok = invitePassInput.value === guest.password;
-      invitePassInput.classList.toggle('is-valid', ok);
-      invitePassInput.classList.toggle('is-invalid', !ok && invitePassInput.value.length>0);
-    });
-
-    slotInputs.forEach((input, i) => {
-      if (!input) return;
-      input.addEventListener("change", (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (file) handleImageSelected(i, file);
-      });
-      const frameToggle = document.getElementById(`frame-toggle-input-${i}`);
-      if (frameToggle) {
-        frameToggle.addEventListener('change', () => updatePreview(i));
-      }
-    });
-
-    slotLiveBtns.forEach((btn, i) => {
-        if (!btn) return;
-        btn.addEventListener('click', () => slotInputs[i].click());
-    });
-
-    slotGalleryBtns.forEach((btn, i) => {
-        if (!btn) return;
-        btn.addEventListener('click', () => slotInputs[i].click());
-    });
-
-    slotZones.forEach((zone, i) => {
-      if (!zone) return;
-      zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
-      zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-      zone.addEventListener("drop", (e) => {
-        e.preventDefault(); zone.classList.remove("dragover");
-        const file = e.dataTransfer.files && e.dataTransfer.files[0];
-        if (file) handleImageSelected(i, file);
-      });
-    });
-    slotClears.forEach((btn, i) => { if (btn) btn.addEventListener("click", () => clearSlot(i)); });
-
-    if (submitMissionsBtn) submitMissionsBtn.addEventListener('click', onSubmitMissions);
-
-    if (confirmationGalleryBtn) confirmationGalleryBtn.addEventListener('click', openGallery);
-    if (confirmationNewGuestBtn) confirmationNewGuestBtn.addEventListener('click', resetToInviteInput);
-
-    if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
-    if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
-    
-  } catch (error) {
-    console.error("Failed to initialize the application:", error);
-    const appElement = document.querySelector('.app');
-    if (appElement) {
-        appElement.innerHTML = `<div class="card" style="text-align:center; padding: 2rem;"><h2>Oops! Une erreur est survenue.</h2><p>L'application n'a pas pu démarrer. Veuillez réessayer plus tard.</p><p><small>Détail de l'erreur : ${error.message}</small></p></div>`;
+    if (state.frame) {
+      framePreviewImg.src = state.frame;
     }
   }
+
+  if (missionsSaveBtn) missionsSaveBtn.addEventListener('click', saveMissions);
+
+  if (accessModeSelect) {
+    accessModeSelect.value = state.accessMode;
+    accessModeSelect.addEventListener('change', () => {
+      state.accessMode = accessModeSelect.value; saveAccessMode();
+      showToast(t("accessModeUpdated"));
+    });
+  }
+
+  if (eventRequiredSelect && eventPassAdminInput && eventPassSaveBtn) {
+    eventRequiredSelect.value = state.eventAccess.required ? 'yes' : 'no';
+    eventPassAdminInput.value = state.eventAccess.password || '';
+    eventPassSaveBtn.addEventListener('click', () => {
+      const required = (eventRequiredSelect.value === 'yes');
+      const pwd = (eventPassAdminInput.value || '').trim();
+      if (required && !pwd) { 
+        showToast(t('eventPasswordRequired'), 'danger'); 
+        return; 
+      }
+      state.eventAccess.required = required;
+      state.eventAccess.password = pwd;
+      saveEventPass();
+      if (eventPassRow) eventPassRow.classList.toggle('hidden', !required);
+      if (!required && eventPassInput) {
+        eventPassInput.value = '';
+        eventPassInput.classList.remove('is-valid','is-invalid');
+      }
+      showToast(t('eventPasswordUpdated'));
+    });
+  }
+
+  const adminPhotoSort = document.getElementById('admin-photo-sort');
+  if (adminPhotoSort) adminPhotoSort.addEventListener('change', renderAdminPhotos);
+
+  if (adminResetSettingsBtn) adminResetSettingsBtn.addEventListener('click', () => {
+    if (!confirm(t('resetSettingsConfirmation'))) return;
+    state.challenges = [...DEFAULT_CHALLENGES]; saveChallenges();
+    state.accessMode = 'all'; saveAccessMode();
+    state.eventAccess = { required: false, password: '' }; saveEventPass();
+    if (adminChallengesTextarea) adminChallengesTextarea.value = state.challenges.join('\n');
+    if (accessModeSelect) accessModeSelect.value = 'all';
+    if (eventRequiredSelect) eventRequiredSelect.value = 'no';
+    if (eventPassAdminInput) eventPassAdminInput.value = '';
+    if (eventPassRow) eventPassRow.classList.add('hidden');
+    showToast(t('settingsReset'));
+  });
+
+  if (adminDeleteAllPhotosBtn) adminDeleteAllPhotosBtn.addEventListener('click', () => {
+    if (!confirm(t('deleteAllPhotosConfirmation'))) return;
+    uploads = {}; saveUploads();
+    renderAdminPhotos();
+    showToast(t('allPhotosDeleted'));
+  });
+
+  renderGallery();
+  
+  hydrateMissionSelectors();
+
+  if (accessBannerEl) {
+    accessBannerEl.classList.toggle('hidden', state.accessMode !== 'guests_only');
+  }
+
+  if (inviteNamesDatalist) {
+    inviteNamesDatalist.innerHTML = '';
+    if (state.accessMode === 'guests_only') {
+      Object.values(state.guests).forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.display;
+        inviteNamesDatalist.appendChild(opt);
+      });
+    }
+  }
+
+  const inviteInputEl = document.getElementById('invite-name');
+  if (inviteInputEl) {
+    inviteInputEl.addEventListener('input', () => {
+      if (state.accessMode !== 'guests_only') { if(invitePassRow) invitePassRow.classList.add('hidden'); return; }
+      const key = resolveInviteKey(inviteInputEl.value||'');
+      const guest = state.guests[key];
+      const needPass = !!(guest && guest.password);
+      if (invitePassRow) invitePassRow.classList.toggle('hidden', !needPass);
+    });
+  }
+
+  const passHelpBtn = document.getElementById('invite-pass-help');
+  if (passHelpBtn) passHelpBtn.addEventListener('click', ()=> showToast(t('passwordHint')));
+  const passToggleBtn = document.getElementById('invite-pass-toggle');
+  if (passToggleBtn && invitePassInput) passToggleBtn.addEventListener('click', ()=> {
+    const isText = invitePassInput.type === 'text';
+    invitePassInput.type = isText ? 'password' : 'text';
+    passToggleBtn.setAttribute('aria-pressed', String(!isText));
+  });
+
+  if (eventPassRow) eventPassRow.classList.toggle('hidden', !(state.eventAccess && state.eventAccess.required));
+  const eventHelpBtn = document.getElementById('event-pass-help');
+  if (eventHelpBtn) eventHelpBtn.addEventListener('click', ()=> showToast(t('eventPasswordHint')));
+  const eventToggleBtn = document.getElementById('event-pass-toggle');
+  if (eventToggleBtn && eventPassInput) eventToggleBtn.addEventListener('click', ()=> {
+    const isText = eventPassInput.type === 'text';
+    eventPassInput.type = isText ? 'password' : 'text';
+    eventToggleBtn.setAttribute('aria-pressed', String(!isText));
+  });
+
+  if (eventPassInput) eventPassInput.addEventListener('input', ()=> {
+    if (!(state.eventAccess && state.eventAccess.required)) return;
+    const ok = eventPassInput.value === (state.eventAccess.password||'');
+    eventPassInput.classList.toggle('is-valid', ok);
+    eventPassInput.classList.toggle('is-invalid', !ok && eventPassInput.value.length>0);
+  });
+  if (invitePassInput) invitePassInput.addEventListener('input', ()=> {
+    if (state.accessMode !== 'guests_only') return;
+    const nameEl = document.getElementById('invite-name');
+    const key = resolveInviteKey((nameEl && nameEl.value)||'');
+    const guest = state.guests[key];
+    if (!(guest && guest.password)) return;
+    const ok = invitePassInput.value === guest.password;
+    invitePassInput.classList.toggle('is-valid', ok);
+    invitePassInput.classList.toggle('is-invalid', !ok && invitePassInput.value.length>0);
+  });
+
+  slotInputs.forEach((input, i) => {
+    if (!input) return;
+    input.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) handleImageSelected(i, file);
+    });
+    const frameToggle = document.getElementById(`frame-toggle-input-${i}`);
+    if (frameToggle) {
+      frameToggle.addEventListener('change', () => updatePreview(i));
+    }
+  });
+
+  slotLiveBtns.forEach((btn, i) => {
+      if (!btn) return;
+      btn.addEventListener('click', () => openLiveCapture(i));
+  });
+
+  slotGalleryBtns.forEach((btn, i) => {
+      if (!btn) return;
+      btn.addEventListener('click', () => slotInputs[i].click());
+  });
+
+  slotZones.forEach((zone, i) => {
+    if (!zone) return;
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault(); zone.classList.remove("dragover");
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) handleImageSelected(i, file);
+    });
+  });
+  slotClears.forEach((btn, i) => { if (btn) btn.addEventListener("click", () => clearSlot(i)); });
+
+  if (submitMissionsBtn) submitMissionsBtn.addEventListener('click', onSubmitMissions);
+
+  if (confirmationGalleryBtn) confirmationGalleryBtn.addEventListener('click', openGallery);
+  if (confirmationNewGuestBtn) confirmationNewGuestBtn.addEventListener('click', resetToInviteInput);
+
+  if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', hideLightbox);
+  if (lightboxClose) lightboxClose.addEventListener('click', hideLightbox);
+  
 }
 
 
@@ -1246,65 +1213,53 @@ function bindAdminPhotoTabs() {
   adminTabPublished.addEventListener('click', ()=> activate('published'));
 }
 
-async function renderAdminPhotos() {
+function renderAdminPhotos() {
   if (!adminPhotosPendingTbody || !adminPhotosPublishedTbody) return;
   adminPhotosPendingTbody.innerHTML = '';
   adminPhotosPublishedTbody.innerHTML = '';
   const fmt = (ts) => ts ? new Date(ts).toLocaleString() : '—';
   const sortMode = (document.getElementById('admin-photo-sort')?.value) || 'date_desc';
-
-  const { data, error } = await supabaseClient
-    .from('photos')
-    .select('*')
-    .order('created_at', { ascending: sortMode === 'date_asc' });
-
-  if (error) {
-    console.error('Error fetching photos:', error);
-    return;
+  const records = [];
+  for (const [inviteKey, arr] of Object.entries(uploads)) {
+    const display = state.nameMap[inviteKey] || inviteKey;
+    (arr||[]).forEach((up, slot) => {
+      if (!up || !up.data) return;
+      const id = makeImageId(inviteKey, up.data); const c = (likesDb[id]&&likesDb[id].count)||0;
+      records.push({ inviteKey, slot, up, display, likes: c });
+    });
   }
-
-  const records = data.map(photo => {
-    const display = state.nameMap[photo.guest_key] || photo.guest_key;
-    const id = makeImageId(photo.guest_key, photo.photo_url);
-    const likes = (likesDb[id] && likesDb[id].count) || 0;
-    return { ...photo, display, likes };
-  });
-
   console.log(`[renderAdminPhotos] Records to render:`, records);
-  if (sortMode === 'likes_desc') {
-    records.sort((a,b) => (b.likes||0) - (a.likes||0));
-  }
-
+  records.sort((a,b) => {
+    if (sortMode === 'date_asc') return (a.up.createdAt||0) - (b.up.createdAt||0);
+    if (sortMode === 'likes_desc') return (b.likes||0) - (a.likes||0);
+    return (b.up.createdAt||0) - (a.up.createdAt||0);
+  });
   for (const rec of records) {
-    const { id, photo_url, display, mission_label, created_at, status, likes, guest_key } = rec;
+    const { inviteKey, slot, up, display, likes } = rec;
     const tr = document.createElement('tr');
-    const img = `<img src="${photo_url}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
-    if (status === 'pending') {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">${t('pendingStatus')}</span></td><td>${escapeHtml(mission_label||'')}</td><td>${fmt(created_at)}</td><td><button class="btn" data-act="publish" data-id="${id}">${t('validateAndPublish')}</button> <button class="btn danger" data-act="delete" data-id="${id}" data-url="${photo_url}">${t('delete')}</button></td>`;
+    const img = `<img src="${up.data}" alt="mini" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"/>`;
+    if (!up.published) {
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-pending">${t('pendingStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.createdAt)}</td><td><button class="btn" data-act="publish" data-g="${inviteKey}" data-slot="${slot}">${t('validateAndPublish')}</button> <button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
       adminPhotosPendingTbody.appendChild(tr);
-    } else if (status === 'published') {
-      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">${t('publishedStatus')}</span></td><td>${escapeHtml(mission_label||'')}</td><td>${fmt(created_at)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-id="${id}" data-url="${photo_url}">${t('delete')}</button></td>`;
+    } else if (up.published) {
+      tr.innerHTML = `<td>${img}</td><td>${escapeHtml(display)} <span class="status-badge status-published">${t('publishedStatus')}</span></td><td>${escapeHtml(up.challengeLabel||'')}</td><td>${fmt(up.publishedAt)}</td><td>${likes} ❤️</td><td><button class="btn danger" data-act="delete" data-g="${inviteKey}" data-slot="${slot}">${t('delete')}</button></td>`;
       adminPhotosPublishedTbody.appendChild(tr);
     }
   }
   adminPhotosPendingTbody.querySelectorAll('button[data-act="publish"]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      await supabaseClient.from('photos').update({ status: 'published' }).eq('id', id);
+    btn.addEventListener('click', () => {
+      const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
+      handleAdminActionOnUpload('publish', g, s);
       renderAdminPhotos();
     });
   });
   [adminPhotosPendingTbody, adminPhotosPublishedTbody].forEach(tbody => {
     tbody.querySelectorAll('button[data-act="delete"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        const url = btn.getAttribute('data-url');
+      btn.addEventListener('click', () => {
+        const g = btn.getAttribute('data-g'); const s = Number(btn.getAttribute('data-slot'));
         if (!confirm(t('deletePhotoConfirmation'))) return;
-
-        const fileName = url.split('/').pop();
-        await supabaseClient.storage.from('photos').remove([fileName]);
-        await supabaseClient.from('photos').delete().eq('id', id);
-
+        const arr = uploads[g] || [null,null];
+        arr[s] = null; uploads[g] = arr; saveUploads();
         renderAdminPhotos();
         showToast(t('photoDeleted'));
       });
@@ -1340,37 +1295,18 @@ function getUploadsForInvite(inviteKey) {
   if (!entry) return [null, null];
   return [entry[0] || null, entry[1] || null];
 }
-function setUploadForInvite(inviteKey, slot, publicUrl) {
+function setUploadForInvite(inviteKey, slot, dataUrl) {
   console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
   const current = uploads[inviteKey] || [null, null];
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-  current[slot] = { data: publicUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null, isUrl: true };
+  current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
   uploads[inviteKey] = current;
-  saveUploads(); // Still save to local storage for immediate UI updates
+  saveUploads();
   console.log(`[setUploadForInvite] Current uploads object after setting:`, uploads);
 }
 function clearAllUploads() { uploads = {}; saveUploads(); }
 
-async function loadUploadsForInvite(inviteKey) {
-  const { data, error } = await supabaseClient
-    .from('photos')
-    .select('photo_url, mission_label')
-    .eq('guest_key', inviteKey)
-    .order('created_at');
-
-  if (error) {
-    console.error('Error loading uploads:', error);
-  } else {
-    uploads[inviteKey] = [null, null];
-    if (data && data.length > 0) {
-      data.forEach((photo, index) => {
-        if (index < 2) {
-          uploads[inviteKey][index] = { data: photo.photo_url, approved: false, published: false, challengeLabel: photo.mission_label, isUrl: true };
-        }
-      });
-    }
-  }
-
+function loadUploadsForInvite(inviteKey) {
   for (let i = 0; i < 2; i++) {
     updatePreview(i);
   }
@@ -1384,7 +1320,7 @@ async function updatePreview(slot) {
   const [a, b] = getUploadsForInvite(state.currentInviteName);
   const arr = [a, b];
   const upload = arr[slot];
-  const dataUrl = upload && upload.data; // This can be a data URL or a public URL
+  const dataUrl = upload && upload.data;
   
   const imgPreview = slotPreviews[slot];
   const zone = slotZones[slot];
@@ -1397,11 +1333,7 @@ async function updatePreview(slot) {
 
   if (dataUrl) {
     const shouldUseFrame = frameToggle && frameToggle.checked && state.frame;
-    if (upload.isUrl) {
-      imgPreview.src = dataUrl; // It's already a URL
-    } else {
-      imgPreview.src = shouldUseFrame ? await applyFrame(dataUrl) : dataUrl;
-    }
+    imgPreview.src = shouldUseFrame ? await applyFrame(dataUrl) : dataUrl;
     imgPreview.classList.remove('hidden');
     zone.querySelector('.drop__hint').classList.add('hidden');
   } else {
@@ -1411,65 +1343,29 @@ async function updatePreview(slot) {
   }
 }
 
-async function clearSlot(i) {
+function clearSlot(i) {
   const key = state.currentInviteName;
   if (!key) return;
-
   const entry = uploads[key] || [null, null];
-  const upload = entry[i];
-
-  if (upload && upload.data) {
-    if (upload.isUrl) {
-      const fileName = upload.data.split('/').pop();
-      await supabaseClient.storage.from('photos').remove([fileName]);
-      await supabaseClient.from('photos').delete().eq('photo_url', upload.data);
-    }
-  }
-
   entry[i] = null;
   uploads[key] = entry;
-  saveUploads(); // Still save to local storage for immediate UI updates
-  await loadUploadsForInvite(key);
+  saveUploads();
+  loadUploadsForInvite(key);
 }
 
 async function handleImageSelected(slot, file) {
   showLoading();
   try {
-    const inviteKey = state.currentInviteName;
-    if (!inviteKey) {
+    const dataUrl = await compressImageToDataUrl(file); // Just compress, don't frame yet
+    const key = state.currentInviteName;
+    if (!key) {
       console.warn(`[handleImageSelected] No current invite name. Cannot set upload.`);
       return;
     }
-
-    const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
-    const { data, error } = await supabaseClient.storage
-      .from('photos')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      throw error;
-    }
-
-    const { data: { publicUrl } } = supabaseClient.storage.from('photos').getPublicUrl(data.path);
-
-    const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-    const { error: dbError } = await supabaseClient.from('photos').insert({
-      guest_key: inviteKey,
-      mission_label: challengeLabel,
-      photo_url: publicUrl,
-    });
-
-    if (dbError) {
-      throw dbError;
-    }
-    
-    setUploadForInvite(inviteKey, slot, publicUrl); // We might need to adjust this function
-    await updatePreview(slot);
-    showToast(`${t('photoSaved')} ${slot + 1}`);
-    await loadUploadsForInvite(inviteKey);
+    setUploadForInvite(key, slot, dataUrl);
+    await updatePreview(slot); // New function to handle preview with/without frame
+    showToast(`${t('photoSaved')} ${slot+1}`);
+    loadUploadsForInvite(key);
   } catch (e) {
     console.error(`[handleImageSelected] Error processing image:`, e);
     showToast(t("imageProcessingError"), "danger");
@@ -1494,16 +1390,17 @@ function handleAdminActionOnUpload(action, inviteKey, slot) {
   renderGallery();
 }
 
-async function renderGallery() {
+function renderGallery() {
   const columnsWrap = document.getElementById('gallery-columns');
   let placeholder = document.getElementById('gallery-placeholder');
 
-  if (!columnsWrap) return;
+  if (!columnsWrap) return; // Bail if the main container isn't there
 
+  // If placeholder is missing from HTML (e.g., old cached version), create it dynamically
   if (!placeholder) {
     placeholder = document.createElement('div');
     placeholder.id = 'gallery-placeholder';
-    placeholder.className = 'card card--light hidden';
+    placeholder.className = 'card card--light hidden'; // Start hidden
     placeholder.style.textAlign = 'center';
     placeholder.style.padding = '32px';
     placeholder.style.marginBottom = '12px';
@@ -1515,24 +1412,16 @@ async function renderGallery() {
   }
 
   columnsWrap.innerHTML = '';
-
-  const { data, error } = await supabaseClient
-    .from('photos')
-    .select('*')
-    .eq('status', 'published')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching gallery photos:', error);
-    return;
-  }
-
   const byChallenge = new Map();
-  for (const photo of data) {
-    const display = state.nameMap[photo.guest_key] || photo.guest_key;
-    const label = photo.mission_label || t('mission');
-    if (!byChallenge.has(label)) byChallenge.set(label, []);
-    byChallenge.get(label).push({ img: photo.photo_url, label, invite: display, inviteKey: photo.guest_key });
+  for (const [inviteKey, arr] of Object.entries(uploads)) {
+    const display = state.nameMap[inviteKey] || inviteKey;
+    (arr || []).forEach((up) => {
+      if (up && up.data && up.published) {
+        const label = up.challengeLabel || t('mission');
+        if (!byChallenge.has(label)) byChallenge.set(label, []);
+        byChallenge.get(label).push({ img: up.data, label, invite: display, inviteKey });
+      }
+    });
   }
   
   if (byChallenge.size === 0) {
@@ -1556,7 +1445,16 @@ async function renderGallery() {
       div.className = 'gallery-item';
       const likes = getLikesFor(inviteKey, img);
       let timeInfo = '';
-      // Time calculation logic might need adjustment if we don't have all photo data locally
+      const [u0,u1] = getUploadsForInvite(inviteKey);
+      const uploadsTimes = [u0&&u0.createdAt, u1&&u1.createdAt].filter(Boolean);
+      const approvedTimes = [u0&&u0.approvedAt, u1&&u1.approvedAt].filter(Boolean);
+      if (uploadsTimes.length === 2 && approvedTimes.length === 2) {
+        const start = Math.min(...uploadsTimes);
+        const end = Math.max(...approvedTimes);
+        const ms = Math.max(0, end - start);
+        const mins = Math.floor(ms/60000); const secs = Math.floor((ms%60000)/1000);
+        timeInfo = `${t('challengeCompleted')} ${mins}m${secs.toString().padStart(2,'0')}s 🎯`;
+      }
       div.innerHTML = `<img src="${img}" alt="${escapeHtml(label)}"/>
         <div class="badge">${escapeHtml(invite)}</div>
         <button class="like" type="button" aria-label="${t('likeLabel')}"><span>❤️</span><span class="like-count">${likes}</span></button>
@@ -1830,7 +1728,82 @@ function applyFrame(originalImage) {
     });
 }
 
+async function openLiveCapture(slot) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast(t("cameraApiUnavailable"), "danger");
+    return;
+  }
 
+  let stream = null;
+  const overlay = document.createElement('div');
+  
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    
+    overlay.style.position = 'fixed'; 
+    overlay.style.inset = '0'; 
+    overlay.style.zIndex = '70'; 
+    overlay.style.background = 'rgba(0,0,0,0.8)';
+    overlay.innerHTML = `
+      <div style="position:absolute;inset:0;display:grid;place-items:center;">
+        <div style="background:#000;padding:8px;border-radius:12px;display:grid;gap:8px;max-width:92vw;">
+          <video id="live-video" autoplay playsinline style="width:min(92vw,640px);height:auto;border-radius:8px;"></video>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button id="live-cancel" class="btn">${t('cancel')}</button>
+            <button id="live-shoot" class="btn primary">${t('takePhoto')}</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const video = overlay.querySelector('#live-video');
+    video.srcObject = stream;
+
+    const cleanup = () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      if (overlay.parentNode) {
+        overlay.remove();
+      }
+    };
+
+    overlay.querySelector('#live-cancel').addEventListener('click', cleanup);
+    overlay.querySelector('#live-shoot').addEventListener('click', async () => {
+      showLoading();
+      try {
+        const track = stream.getVideoTracks()[0];
+        const imageCapture = 'ImageCapture' in window ? new ImageCapture(track) : null;
+        let blob;
+
+        if (imageCapture && imageCapture.takePhoto) {
+          blob = await imageCapture.takePhoto();
+        } else {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+          blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+        }
+        
+        const file = new File([blob], 'live.jpg', { type: 'image/jpeg' });
+        await handleImageSelected(slot, file);
+
+      } catch (e) {
+        showToast(t("captureImpossible"), "danger");
+      } finally {
+        cleanup();
+        hideLoading();
+      }
+    });
+  } catch (err) {
+      console.error(t('cameraErrorPrompt'), err);
+      showToast(t("cameraError"), "danger");
+      if (stream) { stream.getTracks().forEach(t=>t.stop()); }
+      if (overlay.parentNode) { overlay.remove(); }
+  }
+}
 
 function renderAdminStats() {
   const statsParticipantsEl = document.getElementById('stats-participants');

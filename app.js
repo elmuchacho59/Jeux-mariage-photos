@@ -601,6 +601,7 @@ function openAdmin() {
   } catch {}
   guestFlowSection.classList.add("hidden");
   adminSection.classList.remove("hidden");
+  uploads = loadUploads(); // Recharger les données les plus récentes
   renderAdminTable();
   renderMissionsTable();
   if (adminChallengesTextarea) {
@@ -622,6 +623,7 @@ function openGallery() {
   guestFlowSection.classList.add('hidden');
   adminSection.classList.add('hidden');
   gallerySection.classList.remove('hidden');
+  uploads = loadUploads(); // Recharger les données les plus récentes
   renderGallery();
 }
 

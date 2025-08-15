@@ -587,7 +587,7 @@ function launchConfetti() {
   draw();
 }
 
-function openAdmin() {
+async function openAdmin() {
   try {
     const ok = sessionStorage.getItem(ADMIN_PIN_KEY) === 'ok';
     if (!ok) {
@@ -599,19 +599,50 @@ function openAdmin() {
       sessionStorage.setItem(ADMIN_PIN_KEY, 'ok');
     }
   } catch {}
-  guestFlowSection.classList.add("hidden");
-  adminSection.classList.remove("hidden");
-  uploads = loadUploads(); // Recharger les données les plus récentes
-  renderAdminTable();
-  renderMissionsTable();
-  if (adminChallengesTextarea) {
-    adminChallengesTextarea.value = state.challenges.join("\n");
+
+  showLoading();
+  try {
+    const { data, error } = await supabase.from('uploads').select('*');
+    if (error) {
+      console.error('Error fetching uploads for admin:', error);
+      showToast('Erreur de chargement des photos.', 'danger');
+      return;
+    }
+    
+    const freshUploads = {};
+    for (const record of data) {
+      if (!freshUploads[record.invite_key]) {
+        freshUploads[record.invite_key] = [null, null];
+      }
+      freshUploads[record.invite_key][record.slot] = {
+        data: record.url,
+        challengeLabel: record.challenge_label,
+        approved: record.approved,
+        published: record.published,
+        createdAt: new Date(record.created_at).getTime(),
+        approvedAt: record.approved_at ? new Date(record.approved_at).getTime() : null,
+        publishedAt: record.published_at ? new Date(record.published_at).getTime() : null,
+      };
+    }
+    uploads = freshUploads;
+    saveUploads(); // Mettre à jour le cache local avec les données fraîches
+
+    guestFlowSection.classList.add("hidden");
+    adminSection.classList.remove("hidden");
+    
+    renderAdminTable();
+    renderMissionsTable();
+    if (adminChallengesTextarea) {
+      adminChallengesTextarea.value = state.challenges.join("\n");
+    }
+    renderRanking();
+    renderGuests();
+    bindAdminPhotoTabs();
+    renderAdminPhotos();
+    renderAdminStats();
+  } finally {
+    hideLoading();
   }
-  renderRanking();
-  renderGuests();
-  bindAdminPhotoTabs();
-  renderAdminPhotos();
-  renderAdminStats();
 }
 
 function closeAdmin() {
@@ -619,12 +650,39 @@ function closeAdmin() {
   goToStep(state.currentInviteName ? 'step-missions' : 'step-welcome');
 }
 
-function openGallery() {
-  guestFlowSection.classList.add('hidden');
-  adminSection.classList.add('hidden');
-  gallerySection.classList.remove('hidden');
-  uploads = loadUploads(); // Recharger les données les plus récentes
-  renderGallery();
+async function openGallery() {
+  showLoading();
+  try {
+    const { data, error } = await supabase.from('uploads').select('*');
+    if (error) {
+      console.error('Error fetching uploads for gallery:', error);
+      showToast('Erreur de chargement de la galerie.', 'danger');
+      return;
+    }
+
+    const freshUploads = {};
+    for (const record of data) {
+        if (!freshUploads[record.invite_key]) {
+            freshUploads[record.invite_key] = [null, null];
+        }
+        if (record.published) { // La galerie ne doit contenir que les photos publiées
+            freshUploads[record.invite_key][record.slot] = {
+                data: record.url,
+                challengeLabel: record.challenge_label,
+                published: record.published,
+                publishedAt: record.published_at ? new Date(record.published_at).getTime() : null,
+            };
+        }
+    }
+    uploads = freshUploads;
+
+    guestFlowSection.classList.add('hidden');
+    adminSection.classList.add('hidden');
+    gallerySection.classList.remove('hidden');
+    renderGallery();
+  } finally {
+    hideLoading();
+  }
 }
 
 function closeGallery() {

@@ -1471,13 +1471,25 @@ async function updatePreview(slot) {
   }
 }
 
-function clearSlot(i) {
+async function clearSlot(i) {
   const key = state.currentInviteName;
   if (!key) return;
+  
+  const { error } = await supabase_client
+    .from('uploads')
+    .delete()
+    .eq('invite_key', key)
+    .eq('slot', i);
+
+  if (error) {
+    console.error('Error deleting upload:', error);
+    showToast("Erreur lors de la suppression", "danger");
+    return;
+  }
+
   const entry = uploads[key] || [null, null];
   entry[i] = null;
   uploads[key] = entry;
-  saveUploads();
   loadUploadsForInvite(key);
 }
 
@@ -1500,6 +1512,40 @@ async function handleImageSelected(slot, file) {
   } finally {
     hideLoading();
   }
+}
+
+async function handleAdminActionOnUpload(action, inviteKey, slot) {
+  const entry = uploads[inviteKey] || [null, null];
+  const item = entry[slot];
+  if (!item) return;
+
+  const updates = {};
+  if (action === 'publish') {
+    item.approved = true;
+    item.published = true;
+    item.approvedAt = item.approvedAt || Date.now();
+    item.publishedAt = Date.now();
+    updates.approved = true;
+    updates.published = true;
+    updates.approved_at = new Date(item.approvedAt).toISOString();
+    updates.published_at = new Date(item.publishedAt).toISOString();
+  }
+  
+  const { error } = await supabase_client
+    .from('uploads')
+    .update(updates)
+    .eq('invite_key', inviteKey)
+    .eq('slot', slot);
+
+  if (error) {
+    console.error('Error updating upload status:', error);
+    showToast("Erreur lors de la mise à jour", "danger");
+    return;
+  }
+  
+  uploads[inviteKey] = entry;
+  renderAdminTable();
+  renderGallery();
 }
 
 function renderGallery() {

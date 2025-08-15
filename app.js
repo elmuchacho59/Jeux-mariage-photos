@@ -1302,9 +1302,11 @@ async function setUploadForInvite(inviteKey, slot, imageBlob) {
   // Get public URL
   const publicUrlResult = supabase.storage.from('photos').getPublicUrl(fileName);
 
-  // -- DEBUGGING --
-  console.log('DEBUG: Full result from getPublicUrl:', publicUrlResult);
-  // -- END DEBUGGING --
+  // -- NOUVEAU DÉBOGAGE --
+  if (publicUrlResult.error) {
+    alert('ERREUR SUPABASE: ' + JSON.stringify(publicUrlResult.error));
+  }
+  // -- FIN DÉBOGAGE --
 
   const publicURL = publicUrlResult.data?.publicUrl;
 

@@ -1127,7 +1127,7 @@ function init() {
 
   slotLiveBtns.forEach((btn, i) => {
       if (!btn) return;
-      btn.addEventListener('click', () => openLiveCapture(i));
+      btn.addEventListener('click', () => slotInputs[i].click());
   });
 
   slotGalleryBtns.forEach((btn, i) => {
@@ -1726,90 +1726,7 @@ function applyFrame(originalImage) {
     });
 }
 
-async function openLiveCapture(slot) {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast(t("cameraApiUnavailable"), "danger");
-    return;
-  }
 
-  let stream = null;
-  const overlay = document.createElement('div');
-  
-  try {
-    const constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false };
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (err) {
-      console.warn("Could not get environment camera, trying default camera", err);
-      // Fallback to any camera if the environment one fails
-      const fallbackConstraints = { video: true, audio: false };
-      stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-    }
-    
-    overlay.style.position = 'fixed'; 
-    overlay.style.inset = '0'; 
-    overlay.style.zIndex = '70'; 
-    overlay.style.background = 'rgba(0,0,0,0.8)';
-    overlay.innerHTML = `
-      <div style="position:absolute;inset:0;display:grid;place-items:center;">
-        <div style="background:#000;padding:8px;border-radius:12px;display:grid;gap:8px;max-width:92vw;">
-          <video id="live-video" autoplay playsinline style="width:min(92vw,640px);height:auto;border-radius:8px;"></video>
-          <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button id="live-cancel" class="btn">${t('cancel')}</button>
-            <button id="live-shoot" class="btn primary">${t('takePhoto')}</button>
-          </div>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-
-    const video = overlay.querySelector('#live-video');
-    video.srcObject = stream;
-
-    const cleanup = () => {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-      }
-      if (overlay.parentNode) {
-        overlay.remove();
-      }
-    };
-
-    overlay.querySelector('#live-cancel').addEventListener('click', cleanup);
-    overlay.querySelector('#live-shoot').addEventListener('click', async () => {
-      showLoading();
-      try {
-        const track = stream.getVideoTracks()[0];
-        const imageCapture = 'ImageCapture' in window ? new ImageCapture(track) : null;
-        let blob;
-
-        if (imageCapture && imageCapture.takePhoto) {
-          blob = await imageCapture.takePhoto();
-        } else {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0);
-          blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-        }
-        
-        const file = new File([blob], 'live.jpg', { type: 'image/jpeg' });
-        await handleImageSelected(slot, file);
-
-      } catch (e) {
-        showToast(t("captureImpossible"), "danger");
-      } finally {
-        cleanup();
-        hideLoading();
-      }
-    });
-  } catch (err) {
-      console.error(t('cameraErrorPrompt'), err);
-      showToast(t("cameraError"), "danger");
-      if (stream) { stream.getTracks().forEach(t=>t.stop()); }
-      if (overlay.parentNode) { overlay.remove(); }
-  }
-}
 
 function renderAdminStats() {
   const statsParticipantsEl = document.getElementById('stats-participants');

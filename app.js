@@ -1370,39 +1370,9 @@ async function loadUploads() {
   return uploads;
 }
 
-async function handleAdminActionOnUpload(action, inviteKey, slot) {
-  const entry = uploads[inviteKey] || [null, null];
-  const item = entry[slot];
-  if (!item) return;
-
-  const updates = {};
-  if (action === 'publish') {
-    item.approved = true;
-    item.published = true;
-    item.approvedAt = item.approvedAt || Date.now();
-    item.publishedAt = Date.now();
-    updates.approved = true;
-    updates.published = true;
-    updates.approved_at = new Date(item.approvedAt).toISOString();
-    updates.published_at = new Date(item.publishedAt).toISOString();
-  }
-  
-  const { error } = await supabase_client
-    .from('uploads')
-    .update(updates)
-    .eq('invite_key', inviteKey)
-    .eq('slot', slot);
-
-  if (error) {
-    console.error('Error updating upload status:', error);
-    showToast("Erreur lors de la mise à jour", "danger");
-    return;
-  }
-  
-  uploads[inviteKey] = entry;
-  renderAdminTable();
-  renderGallery();
-}
+// La fonction saveUploads est intentionnellement laissée vide car la sauvegarde
+// est gérée de manière plus spécifique par setUploadForInvite et handleAdminActionOnUpload.
+function saveUploads() {}
 
 function getUploadsForInvite(inviteKey) {
   const entry = uploads[inviteKey];

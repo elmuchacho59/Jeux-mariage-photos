@@ -1,0 +1,12 @@
+-- Commandes pour corriger la politique de lecture des photos.
+-- Copiez et exécutez ces deux commandes dans l'éditeur SQL de Supabase,
+-- l'une après l'autre.
+
+-- 1. Supprimer l'ancienne règle (si elle existe)
+DROP POLICY "Enable read access for all users" ON public.uploads;
+
+-- 2. Recréer la règle correctement
+CREATE POLICY "Enable read access for all users"
+ON public.uploads
+FOR SELECT
+USING (true);

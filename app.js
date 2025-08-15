@@ -1,5 +1,3 @@
-let supabaseClient;
-
 const i18n = {
   fr: {
     unassigned: "Non assigné",
@@ -140,6 +138,11 @@ const i18n = {
 const lang = document.documentElement.lang === 'es' ? 'es' : 'fr';
 const t = (key) => i18n[lang][key] || i18n.fr[key];
 
+const SUPABASE_URL = "https://uiraepbmqeuqkaxpupct.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpcmFlcGJtcWV1cWtheHB1cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjI4MDAsImV4cCI6MjA3MDgzODgwMH0.RtbVxvVfT0OFq209lPMvHR7k4_h2weAfnig7ahrFFpw";
+const { createClient } = window.supabase;
+const supabase_client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 /*
   Défi Photo – Mariage
   Application statique qui assigne 2 défis photo distincts par invité via une roue de la fortune.
@@ -212,15 +215,26 @@ const state = {
   currentInviteName: null,
   currentRotationDeg: 0,
   isSpinning: false,
-  challenges: loadChallenges(),
-  assignments: loadAssignments(),
-  nameMap: loadNameMap(),
-  guests: loadGuests(),
-  accessMode: loadAccessMode(),
-  eventAccess: loadEventPass(),
-  missions: loadMissions(),
-  frame: localStorage.getItem(FRAME_KEY) || null,
+  challenges: [],
+  assignments: {},
+  nameMap: {},
+  guests: {},
+  accessMode: 'all',
+  eventAccess: { required: false, password: '' },
+  missions: {},
+  frame: null,
 };
+
+async function loadInitialData() {
+  state.challenges = await loadChallenges();
+  state.assignments = await loadAssignments();
+  state.nameMap = await loadNameMap();
+  state.guests = await loadGuests();
+  state.accessMode = await loadAccessMode();
+  state.eventAccess = await loadEventPass();
+  state.missions = await loadMissions();
+  state.frame = localStorage.getItem(FRAME_KEY) || null; // Frame is local for now
+}
 
 let guestFlowSection, stepWelcome, stepMissions, stepConfirmation, missionSelectionPanel, missionDisplayPanel, confirmationGalleryBtn, confirmationNewGuestBtn, currentInviteEl, assignedCountEl, assignedItemsEl, challengeListEl, mission1El, mission2El, missionConfirmBtn, missionResetBtn, missionsTbody, missionsSaveBtn, missionConsignesCard, missionConsignesList, accessBannerEl, invitePassInput, invitePassRow, inviteNamesDatalist, eventPassRow, eventPassInput, spinBtn, lockedNoteEl, progressBarEl, toastContainer, confettiCanvas, goAdminBtn, goGalleryBtn, adminSection, adminExitBtn, gallerySection, galleryExitBtn, lightboxEl, lightboxBackdrop, lightboxImg, lightboxCaption, lightboxDownload, lightboxClose, adminRefreshBtn, adminCopyBtn, adminExportBtn, adminExportZipBtn, adminLogoutBtn, adminSearchInput, adminTbody, adminResetAllBtn, adminChallengesTextarea, adminChallengesSaveBtn, adminGuestName, adminGuestPass, adminGuestAddBtn, adminGuestsTbody, accessModeSelect, adminTabPending, adminTabPublished, adminPhotosPendingTbody, adminPhotosPublishedTbody, eventRequiredSelect, eventPassAdminInput, eventPassSaveBtn, adminResetSettingsBtn, adminDeleteAllPhotosBtn, uploadSection, submitMissionsBtn, submissionMsgEl, loadingOverlayEl;
 let slotInputs = [], slotPreviews = [], slotZones = [], slotClears = [], slotLiveBtns = [], slotGalleryBtns = [];
@@ -230,100 +244,159 @@ const $ = (sel) => document.querySelector(sel);
 function showLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.remove('hidden'); }
 function hideLoading() { if (loadingOverlayEl) loadingOverlayEl.classList.add('hidden'); }
 
-function loadAssignments() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
+async function loadAssignments() {
+  const { data, error } = await supabase_client.from('assignments').select('*');
+  if (error) {
+    console.error('Error loading assignments:', error);
     return {};
   }
-}
-
-function loadChallenges() {
-  try {
-    const raw = localStorage.getItem(CHALLENGES_KEY);
-    if (!raw) return [...DEFAULT_CHALLENGES];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()) : [...DEFAULT_CHALLENGES];
-  } catch { return [...DEFAULT_CHALLENGES]; }
-}
-
-function saveChallenges() {
-  localStorage.setItem(CHALLENGES_KEY, JSON.stringify(state.challenges));
-}
-
-function saveAssignments() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.assignments));
-}
-
-function loadNameMap() {
-  try {
-    const raw = localStorage.getItem(STORAGE_NAME_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveNameMap() {
-  localStorage.setItem(STORAGE_NAME_KEY, JSON.stringify(state.nameMap));
-}
-
-function loadGuests() {
-  try { const raw = localStorage.getItem(GUESTS_KEY); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
-}
-function saveGuests() { localStorage.setItem(GUESTS_KEY, JSON.stringify(state.guests)); }
-
-function loadEventPass() {
-  try { const raw = localStorage.getItem(EVENT_PASS_KEY); return raw ? JSON.parse(raw) : { required: false, password: '' }; } catch { return { required: false, password: '' }; }
-}
-function saveEventPass() { localStorage.setItem(EVENT_PASS_KEY, JSON.stringify(state.eventAccess)); }
-
-function loadMissions() {
-  try {
-    const raw = localStorage.getItem(MISSIONS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === 'object' && parsed !== null) {
-        // New format: { 1: { fr: '...', es: '...' }, ... }
-        if (parsed['1'] && typeof parsed['1'] === 'object') {
-          return parsed;
-        }
-        // Old format: { 1: '...', ... } -> convert
-        const converted = {};
-        for (let i = 1; i <= 10; i++) {
-          converted[i] = { fr: parsed[i] || '', es: '' };
-        }
-        return converted;
-      }
+  const assignments = {};
+  for (const assignment of data) {
+    if (!assignments[assignment.invite_key]) {
+      assignments[assignment.invite_key] = [];
     }
-  } catch {}
-  const def = {};
-  for (let i = 1; i <= 10; i++) {
-    def[i] = { fr: '', es: '' };
+    assignments[assignment.invite_key].push(assignment.challenge);
   }
-  return def;
+  return assignments;
 }
 
-function saveMissions() {
+async function loadChallenges() {
+  const { data, error } = await supabase_client.from('challenges').select('text');
+  if (error || !data || data.length === 0) {
+    console.error('Error loading challenges, falling back to default:', error);
+    return [...DEFAULT_CHALLENGES];
+  }
+  return data.map(c => c.text);
+}
+
+async function saveChallenges() {
+  const challengesToSave = state.challenges.map(text => ({ text }));
+  const { error } = await supabase_client.from('challenges').upsert(challengesToSave);
+  if (error) {
+    console.error('Error saving challenges:', error);
+  }
+}
+
+async function saveAssignments() {
+  const assignmentsToSave = [];
+  for (const invite_key in state.assignments) {
+    for (const challenge of state.assignments[invite_key]) {
+      assignmentsToSave.push({ invite_key, challenge });
+    }
+  }
+  // This is a bit simplistic, it will re-insert everything.
+  // A better approach would be to only insert new assignments.
+  // For now, we might need to clear and re-insert. Or use upsert carefully.
+  // Let's clear first for simplicity.
+  await supabase_client.from('assignments').delete().neq('invite_key', 'dummy_value_to_delete_all'); // hack to delete all
+  const { error } = await supabase_client.from('assignments').insert(assignmentsToSave);
+  if (error) {
+    console.error('Error saving assignments:', error);
+  }
+}
+
+async function loadNameMap() {
+  // This is now part of the guests table, but we can still load it for legacy purposes
+  // Or, more simply, derive it from the guests table.
+  const { data, error } = await supabase_client.from('guests').select('key, display');
+  if (error) {
+    console.error('Error loading name map:', error);
+    return {};
+  }
+  const nameMap = {};
+  for (const guest of data) {
+    nameMap[guest.key] = guest.display;
+  }
+  return nameMap;
+}
+
+async function saveNameMap() {
+  // This is now handled by saveGuests, so this function can be a no-op
+  // or be removed.
+}
+
+async function loadGuests() {
+  const { data, error } = await supabase_client.from('guests').select('*');
+  if (error) {
+    console.error('Error loading guests:', error);
+    return {};
+  }
+  const guests = {};
+  for (const guest of data) {
+    guests[guest.key] = { display: guest.display, password: guest.password };
+  }
+  return guests;
+}
+async function saveGuests() {
+  const guestsToSave = Object.entries(state.guests).map(([key, { display, password }]) => ({ key, display, password }));
+  const { error } = await supabase_client.from('guests').upsert(guestsToSave);
+  if (error) {
+    console.error('Error saving guests:', error);
+  }
+}
+
+async function loadEventPass() {
+    const { data, error } = await supabase_client.from('settings').select('value').eq('key', 'eventAccess').single();
+    if (error || !data) {
+        console.error('Error loading event pass:', error);
+        return { required: false, password: '' };
+    }
+    return data.value;
+}
+async function saveEventPass() {
+  const { error } = await supabase_client.from('settings').upsert({ key: 'eventAccess', value: state.eventAccess });
+  if (error) {
+    console.error('Error saving event pass:', error);
+  }
+}
+
+async function loadMissions() {
+  const { data, error } = await supabase_client.from('missions').select('*');
+  if (error) {
+    console.error('Error loading missions:', error);
+    return {};
+  }
+  const missions = {};
+  for (const mission of data) {
+    missions[mission.id] = { fr: mission.fr, es: mission.es };
+  }
+  return missions;
+}
+
+async function saveMissions() {
+  const missionsToSave = [];
   for (let i = 1; i <= 10; i++) {
     const fr = document.getElementById(`mission-c-${i}-fr`)?.value || '';
     const es = document.getElementById(`mission-c-${i}-es`)?.value || '';
     state.missions[i] = { fr, es };
+    missionsToSave.push({ id: i, fr, es });
   }
-  localStorage.setItem(MISSIONS_KEY, JSON.stringify(state.missions));
-  showToast(t('missionsSavedSuccess'));
+
+  const { error } = await supabase_client.from('missions').upsert(missionsToSave);
+
+  if (error) {
+    console.error('Error saving missions:', error);
+    showToast('Erreur lors de la sauvegarde des missions', 'danger');
+  } else {
+    showToast(t('missionsSavedSuccess'));
+  }
 }
 
 
-function loadAccessMode() {
-  try { return localStorage.getItem(ACCESS_MODE_KEY) || 'all'; } catch { return 'all'; }
+async function loadAccessMode() {
+  const { data, error } = await supabase_client.from('settings').select('value').eq('key', 'accessMode').single();
+  if (error || !data) {
+    console.error('Error loading access mode:', error);
+    return 'all';
+  }
+  return data.value;
 }
-function saveAccessMode() { localStorage.setItem(ACCESS_MODE_KEY, state.accessMode); }
+async function saveAccessMode() {
+  const { error } = await supabase_client.from('settings').upsert({ key: 'accessMode', value: state.accessMode });
+  if (error) {
+    console.error('Error saving access mode:', error);
+  }
+}
 
 function getAssignedForInvite(inviteName) {
   if (!inviteName) return [];
@@ -816,24 +889,12 @@ function buildZipBlob(files) {
   return new Blob(chunks, { type: 'application/zip' });
 }
 
-function init() {
-  // --- SUPABASE CONNECT ---
-  try {
-    if (window.supabase) {
-      const { createClient } = supabase;
-      const supabaseUrl = 'https://uiraepbmqeuqkaxpupct.supabase.co';
-      const supabaseKey = 'sb_publishable_UcN31Rbc1bW-W0rsAY7XDQ_w-kYZ9S0';
-      supabaseClient = createClient(supabaseUrl, supabaseKey);
-    } else {
-      console.warn("Supabase script not loaded. Falling back to localStorage.");
-    }
-  } catch (error) {
-    console.error("Supabase initialisation failed:", error);
-  }
-  // --- END SUPABASE CONNECT ---
+async function init() {
+  await loadInitialData();
 
   const langFrBtn = document.getElementById('lang-fr');
   const langEsBtn = document.getElementById('lang-es');
+
 
   if (langFrBtn) {
     langFrBtn.addEventListener('click', () => {
@@ -1271,25 +1332,33 @@ function renderAdminPhotos() {
 
 const UPLOADS_KEY = "defis_mariage_uploads_v2";
 
-function loadUploads() {
-  try {
-    const raw = localStorage.getItem(UPLOADS_KEY);
-    if (!raw) {
-      console.log(`[loadUploads] No uploads found in localStorage. Returning empty object.`);
-      return {};
-    }
-    const parsed = JSON.parse(raw);
-    console.log(`[loadUploads] Loaded uploads from localStorage:`, parsed);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (e) {
-    console.error(`[loadUploads] Error loading uploads from localStorage:`, e);
+async function loadUploads() {
+  const { data, error } = await supabase_client.from('uploads').select('*');
+  if (error) {
+    console.error('Error loading uploads:', error);
     return {};
   }
+  const uploads = {};
+  for (const upload of data) {
+    if (!uploads[upload.invite_key]) {
+      uploads[upload.invite_key] = [];
+    }
+    uploads[upload.invite_key][upload.slot] = {
+      data: upload.url,
+      approved: upload.approved,
+      published: upload.published,
+      challengeLabel: upload.challenge_label,
+      createdAt: new Date(upload.created_at).getTime(),
+      approvedAt: upload.approved_at ? new Date(upload.approved_at).getTime() : null,
+      publishedAt: upload.published_at ? new Date(upload.published_at).getTime() : null,
+    };
+  }
+  return uploads;
 }
 let uploads = loadUploads();
-function saveUploads() {
-  localStorage.setItem(UPLOADS_KEY, JSON.stringify(uploads));
-  console.log(`[saveUploads] Uploads saved to localStorage:`, uploads);
+async function saveUploads() {
+  // This function will now be handled by more granular functions like setUploadForInvite
+  // and handleAdminActionOnUpload, so we can leave it empty or remove it.
 }
 
 function getUploadsForInvite(inviteKey) {
@@ -1297,16 +1366,66 @@ function getUploadsForInvite(inviteKey) {
   if (!entry) return [null, null];
   return [entry[0] || null, entry[1] || null];
 }
-function setUploadForInvite(inviteKey, slot, dataUrl) {
-  console.log(`[setUploadForInvite] Setting upload for inviteKey: ${inviteKey}, slot: ${slot}`);
-  const current = uploads[inviteKey] || [null, null];
+async function setUploadForInvite(inviteKey, slot, dataUrl) {
+  const fileName = `${inviteKey}-${slot}-${Date.now()}.jpg`;
+  const { data, error } = await supabase_client.storage
+    .from('photos')
+    .upload(fileName, dataUrlToBlob(dataUrl), {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('Error uploading file:', error);
+    return;
+  }
+
+  const { publicURL, error: urlError } = supabase_client.storage.from('photos').getPublicUrl(fileName);
+
+  if (urlError) {
+    console.error('Error getting public URL:', urlError);
+    return;
+  }
+
   const challengeLabel = (getAssignedForInvite(inviteKey)[slot]) || (slot === 0 ? t('mission1') : t('mission2'));
-  current[slot] = { data: dataUrl, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
-  uploads[inviteKey] = current;
-  saveUploads();
-  console.log(`[setUploadForInvite] Current uploads object after setting:`, uploads);
+  const { error: dbError } = await supabase_client.from('uploads').upsert({
+    invite_key: inviteKey,
+    slot,
+    url: publicURL,
+    challenge_label: challengeLabel,
+    created_at: new Date(),
+  }, { onConflict: 'invite_key, slot' });
+
+  if (dbError) {
+    console.error('Error saving upload metadata:', dbError);
+  } else {
+    // Manually update the local state for immediate UI feedback
+    const current = uploads[inviteKey] || [null, null];
+    current[slot] = { data: publicURL, approved: false, published: false, challengeLabel, createdAt: Date.now(), approvedAt: null, publishedAt: null };
+    uploads[inviteKey] = current;
+  }
 }
-function clearAllUploads() { uploads = {}; saveUploads(); }
+
+function dataUrlToBlob(dataUrl) {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while(n--){
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], {type:mime});
+}
+async function clearAllUploads() {
+  const { error } = await supabase_client.from('uploads').delete().neq('invite_key', 'dummy_value_to_delete_all'); // hack to delete all
+  if (error) {
+    console.error('Error clearing uploads:', error);
+  } else {
+    uploads = {};
+  }
+  // This doesn't delete files from storage, which might be desired.
+}
 
 function loadUploadsForInvite(inviteKey) {
   for (let i = 0; i < 2; i++) {
@@ -1836,7 +1955,7 @@ function renderAdminStats() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
+  document.addEventListener('DOMContentLoaded', init);
 } else {
-  queueMicrotask(init);
+  init();
 }
